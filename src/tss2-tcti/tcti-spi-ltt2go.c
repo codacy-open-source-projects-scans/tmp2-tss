@@ -14,16 +14,16 @@
 #include <assert.h>
 
 #include "tss2_tcti.h"
-#include "tcti-spi-lt2go.h"
-#include "tss2_tcti_spi_lt2go.h"
+#include "tcti-spi-ltt2go.h"
+#include "tss2_tcti_spi_ltt2go.h"
 #include "tcti-spi-helper.h"
 #include "tss2_mu.h"
 #include "util/io.h"
 #define LOGMODULE tcti
 #include "util/log.h"
 
-#define VID_CYPRESS 0x04b4u
-#define PID_CYUSBSPI 0x0004u
+#define VID_PI3G 0x365Du
+#define PID_LTT2GO 0x1337u
 #define TIMEOUT 1000
 #define CTRL_SET 0xC0u
 #define CTRL_GET 0x40u
@@ -196,7 +196,7 @@ platform_finalize(void *user_data)
 }
 
 TSS2_RC
-create_tcti_spi_lt2go_platform (TSS2_TCTI_SPI_HELPER_PLATFORM *platform)
+create_tcti_spi_ltt2go_platform (TSS2_TCTI_SPI_HELPER_PLATFORM *platform)
 {
     int ret = 0;
     int nb_ifaces = 0;
@@ -216,7 +216,7 @@ create_tcti_spi_lt2go_platform (TSS2_TCTI_SPI_HELPER_PLATFORM *platform)
         goto out;
     }
 
-    platform_data->dev_handle = libusb_open_device_with_vid_pid (platform_data->ctx, VID_CYPRESS, PID_CYUSBSPI);
+    platform_data->dev_handle = libusb_open_device_with_vid_pid (platform_data->ctx, VID_PI3G, PID_LTT2GO);
     if (!platform_data->dev_handle) {
         LOG_ERROR ("LetsTrust-TPM2Go not found.");
         goto out;
@@ -296,7 +296,7 @@ out:
 }
 
 TSS2_RC
-Tss2_Tcti_Spi_Lt2go_Init (TSS2_TCTI_CONTEXT* tcti_context, size_t* size, const char* config)
+Tss2_Tcti_Spi_Ltt2go_Init (TSS2_TCTI_CONTEXT* tcti_context, size_t* size, const char* config)
 {
     (void) config;
     TSS2_RC ret = 0;
@@ -307,7 +307,7 @@ Tss2_Tcti_Spi_Lt2go_Init (TSS2_TCTI_CONTEXT* tcti_context, size_t* size, const c
         return Tss2_Tcti_Spi_Helper_Init (NULL, size, NULL);
     }
 
-    if ((ret = create_tcti_spi_lt2go_platform (&tcti_platform))) {
+    if ((ret = create_tcti_spi_ltt2go_platform (&tcti_platform))) {
         return ret;
     }
 
@@ -317,10 +317,10 @@ Tss2_Tcti_Spi_Lt2go_Init (TSS2_TCTI_CONTEXT* tcti_context, size_t* size, const c
 
 const TSS2_TCTI_INFO tss2_tcti_info = {
     .version = TCTI_VERSION,
-    .name = "tcti-spi-lt2go",
+    .name = "tcti-spi-ltt2go",
     .description = "TCTI for communicating with LetsTrust-TPM2Go.",
     .config_help = "Takes no configuration.",
-    .init = Tss2_Tcti_Spi_Lt2go_Init
+    .init = Tss2_Tcti_Spi_Ltt2go_Init
 };
 
 const TSS2_TCTI_INFO *
