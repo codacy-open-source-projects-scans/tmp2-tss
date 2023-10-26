@@ -37,7 +37,6 @@
 #include "tss2_mu.h"
 #include "tcti-common.h"
 #include "tcti-i2c-helper.h"
-#include "util/io.h"
 #include "util/tss2_endian.h"
 #define LOGMODULE tcti
 #include "util/log.h"
@@ -259,10 +258,10 @@ static TSS2_RC i2c_tpm_sanity_check_read (uint8_t reg, uint8_t *buffer, size_t c
         value = buffer[0];
         break;
     case sizeof (uint16_t):
-        value = le16toh (*((uint16_t *)buffer));
+        value = LE_TO_HOST_16 (*((uint16_t *)buffer));
         break;
     case sizeof (uint32_t):
-        value = le32toh (*((uint32_t *)buffer));
+        value = LE_TO_HOST_32 (*((uint32_t *)buffer));
         break;
     default:
         return TSS2_RC_SUCCESS;
@@ -351,12 +350,12 @@ static uint32_t i2c_tpm_helper_read_sts_reg (TSS2_TCTI_I2C_HELPER_CONTEXT* ctx)
 {
     uint32_t status = 0;
     i2c_tpm_helper_read_reg (ctx, TCTI_I2C_HELPER_TPM_STS_REG, &status, sizeof(status));
-    return le32toh (status);
+    return LE_TO_HOST_32 (status);
 }
 
 static void i2c_tpm_helper_write_sts_reg (TSS2_TCTI_I2C_HELPER_CONTEXT* ctx, uint32_t status)
 {
-    status = htole32 (status);
+    status = HOST_TO_LE_32 (status);
     i2c_tpm_helper_write_reg (ctx, TCTI_I2C_HELPER_TPM_STS_REG, &status, sizeof (status));
 }
 
@@ -417,7 +416,7 @@ static TSS2_RC i2c_tpm_helper_init_guard_time (TSS2_TCTI_I2C_HELPER_CONTEXT* ctx
         return rc;
     }
 
-    i2c_caps = le32toh (i2c_caps);
+    i2c_caps = LE_TO_HOST_32 (i2c_caps);
 
     ctx->guard_time_read  = (i2c_caps & TCTI_I2C_HELPER_TPM_GUARD_TIME_RR_MASK) ||
                             (i2c_caps & TCTI_I2C_HELPER_TPM_GUARD_TIME_RW_MASK);
@@ -490,7 +489,7 @@ static TSS2_RC i2c_tpm_helper_verify_crc (TSS2_TCTI_I2C_HELPER_CONTEXT* ctx, con
         return rc;
     }
 
-    crc_tpm = le16toh (crc_tpm);
+    crc_tpm = LE_TO_HOST_16 (crc_tpm);
     /* Reflect crc result, regardless of host endianness */
     crc_tpm = ((crc_tpm >> 8) & 0xFFu) | ((crc_tpm << 8) & 0xFF00u);
     crc_host = crc_ccitt (buffer, size);
@@ -554,7 +553,7 @@ TSS2_RC tcti_i2c_helper_transmit (TSS2_TCTI_CONTEXT *tcti_ctx, size_t size, cons
         return TSS2_TCTI_RC_BAD_VALUE;
     }
 
-    LOGBLOB_DEBUG (cmd_buf, size, "Sending command with TPM_CC %#x and size %" PRIu32,
+    LOGBLOB_DEBUG (cmd_buf, size, "Sending command with TPM_CC %#"PRIx32" and size %" PRIu32,
                header.code, header.size);
 
     /* Tell TPM to expect command */
@@ -655,7 +654,7 @@ TSS2_RC tcti_i2c_helper_receive (TSS2_TCTI_CONTEXT* tcti_context, size_t *respon
     /* Verify that there is still data to read */
     uint32_t status = i2c_tpm_helper_read_sts_reg (ctx);
     if ((status & expected_status_bits) != expected_status_bits) {
-        LOG_ERROR ("Unexpected intermediate status %#x",status);
+        LOG_ERROR ("Unexpected intermediate status %#"PRIx32,status);
         return TSS2_TCTI_RC_IO_ERROR;
     }
 
@@ -668,7 +667,7 @@ TSS2_RC tcti_i2c_helper_receive (TSS2_TCTI_CONTEXT* tcti_context, size_t *respon
     /* Verify that there is no more data available */
     status = i2c_tpm_helper_read_sts_reg (ctx);
     if ((status & expected_status_bits) != TCTI_I2C_HELPER_TPM_STS_VALID) {
-        LOG_ERROR ("Unexpected final status %#x", status);
+        LOG_ERROR ("Unexpected final status %#"PRIx32, status);
         return TSS2_TCTI_RC_IO_ERROR;
     }
 
@@ -785,7 +784,7 @@ TSS2_RC Tss2_Tcti_I2c_Helper_Init (TSS2_TCTI_CONTEXT* tcti_context, size_t* size
         /* In case of failed read div_vid is set to zero */
         i2c_tpm_helper_read_reg (ctx, TCTI_I2C_HELPER_TPM_DID_VID_REG, &did_vid, sizeof(did_vid));
         if (did_vid != 0) {
-            did_vid = le32toh (did_vid);
+            did_vid = LE_TO_HOST_32 (did_vid);
             break;
         }
         /* TPM might be resetting, let's retry in a bit */

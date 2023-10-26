@@ -10,14 +10,15 @@
 #include <limits.h>
 
 #include <dlfcn.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 
 #include <libtpms/tpm_library.h>
+#include <libtpms/tpm_tis.h>
 #include <libtpms/tpm_error.h>
 
 #include "tcti-common.h"
-#include "util/io.h"
 #include "util/aux_util.h"
 
 #define TCTI_LIBTPMS_MAGIC 0x49E299A554504D32ULL
@@ -34,6 +35,7 @@ typedef struct {
     TPM_RESULT (*TPMLIB_Process)(unsigned char **, uint32_t *, uint32_t *, unsigned char *, uint32_t);
     TPM_RESULT (*TPMLIB_SetState)(enum TPMLIB_StateType, const unsigned char *, uint32_t);
     void (*TPMLIB_Terminate)(void);
+    TPM_RESULT (*TPM_IO_TpmEstablished_Reset)(void);
     uint8_t *response_buffer;
     size_t response_buffer_len;
     size_t response_len;

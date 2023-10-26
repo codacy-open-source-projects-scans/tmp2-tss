@@ -151,7 +151,7 @@ AS_IF([test "x$enable_fapi_async_tests" = "xyes"],
     [AC_MSG_WARN("FAPI compiled with asynchronous spinning testing. NOT FOR PRODUCTION!")])
 
 AC_ARG_ENABLE([policy],
-            [AS_HELP_STRING([--enable-policy],
+            [AS_HELP_STRING([--disable-policy],
                             [build the tss2-policy library (default is yes)])],
             [enable_policy=$enableval],
             [enable_policy=yes])
@@ -225,6 +225,13 @@ AC_CHECK_LIB([curl], [curl_url_strerror], [AC_DEFINE([HAVE_CURL_URL_STRERROR],[1
 
 AS_IF([test "x$enable_fapi" = xyes -o "x$enable_policy" = xyes ],
       [PKG_CHECK_MODULES([UUID], [uuid])])
+
+AC_ARG_ENABLE([util-io],
+              [AS_HELP_STRING([--disable-util-io],
+              [don't build the util-io])],,
+              [enable_util_io=yes])
+
+AM_CONDITIONAL(ENABLE_UTIL_IO, test "x$enable_util_io" = "xyes")
 
 AC_ARG_WITH([tctidefaultmodule],
             [AS_HELP_STRING([--with-tctidefaultmodule],
@@ -467,11 +474,9 @@ AS_IF([test "x$enable_integration" = "xyes"],
 
        # choose tcti for testing and look for TPM simulator binary
        integration_tcti="none"
-       integration_args=""
        AS_IF([test "x$with_device_set" = xyes],
              [# use device if --with-device was passed
-              integration_tcti=device
-              integration_args="--device=$with_device"
+              integration_tcti=device:$with_device
               AC_MSG_WARN([Using physical TPM for integration testing])])
        AS_IF([test "x$integration_tcti" = "xnone" && test "x$enable_tcti_swtpm" != xyes && test "x$enable_tcti_mssim" != xyes],
              [AC_MSG_ERROR([No suitable TCTI for testing enabled. Please use option --enable-tcti-swtpm (recommended) or --enable-tcti-mssim (fallback) to enable a suitable TCTI or disable testing with --disable-integration.])])
@@ -492,7 +497,6 @@ AS_IF([test "x$enable_integration" = "xyes"],
        AS_IF([test "x$integration_tcti" = "xnone"],
              [AC_MSG_ERROR([No simulator executable found in PATH for testing TCTI.])])
        AC_SUBST([INTEGRATION_TCTI], [$integration_tcti])
-       AC_SUBST([INTEGRATION_ARGS], [$integration_args])
        AC_SUBST([ENABLE_INTEGRATION], [$enable_integration])])
 AM_CONDITIONAL([ENABLE_INTEGRATION],[test "x$enable_integration" = "xyes"])
 #

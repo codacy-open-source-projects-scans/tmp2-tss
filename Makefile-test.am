@@ -8,15 +8,15 @@ TESTS_CFLAGS = $(AM_CFLAGS) $(CRYPTO_CFLAGS) -I$(srcdir)/include -I$(srcdir)/src
     -I$(srcdir)/test/data -Wno-unused-parameter -Wno-missing-field-initializers \
     -DTOP_SOURCEDIR"=\"$(top_srcdir)\""
 TESTS_LDADD = $(check_LTLIBRARIES) $(lib_LTLIBRARIES) \
-    $(CRYPTO_LIBS) $(libutil)
+    $(CRYPTO_LIBS) $(libutil) $(libutilio)
 
 check_LTLIBRARIES =
 # test harness configuration
 TEST_EXTENSIONS = .int .fint
 INT_LOG_COMPILER = $(srcdir)/script/int-log-compiler.sh
 FINT_LOG_COMPILER = $(srcdir)/script/fint-log-compiler.sh
-INT_LOG_FLAGS = $(INTEGRATION_TCTI) $(INTEGRATION_ARGS)
-FINT_LOG_FLAGS = $(INTEGRATION_TCTI) $(INTEGRATION_ARGS)
+INT_LOG_FLAGS = $(INTEGRATION_TCTI)
+FINT_LOG_FLAGS = $(INTEGRATION_TCTI)
 EXTRA_DIST += $(srcdir)/script/int-log-compiler.sh \
               $(srcdir)/script/fint-log-compiler.sh \
               $(srcdir)/script/int-log-compiler-common.sh \
@@ -483,7 +483,7 @@ CLEANFILES += \
 if UNIT
 if ENABLE_TCTI_DEVICE
 test_unit_tcti_device_CFLAGS  = $(CMOCKA_CFLAGS) $(TESTS_CFLAGS)
-test_unit_tcti_device_LDADD   = $(CMOCKA_LIBS) $(libtss2_mu) $(libutil)
+test_unit_tcti_device_LDADD   = $(CMOCKA_LIBS) $(libtss2_mu) $(libutil) $(libutilio)
 test_unit_tcti_device_LDFLAGS = -Wl,--wrap=read -Wl,--wrap=write -Wl,--wrap=poll  \
         -Wl,--wrap=open
 test_unit_tcti_device_SOURCES = test/unit/tcti-device.c \
@@ -493,7 +493,7 @@ endif
 
 if ENABLE_TCTI_MSSIM
 test_unit_tcti_mssim_CFLAGS  = $(CMOCKA_CFLAGS) $(TESTS_CFLAGS)
-test_unit_tcti_mssim_LDADD   = $(CMOCKA_LIBS) $(libtss2_mu) $(libutil)
+test_unit_tcti_mssim_LDADD   = $(CMOCKA_LIBS) $(libtss2_mu) $(libutil) $(libutilio)
 test_unit_tcti_mssim_LDFLAGS = -Wl,--wrap=connect -Wl,--wrap=read -Wl,--wrap=write -Wl,--wrap=poll
 test_unit_tcti_mssim_SOURCES = test/unit/tcti-mssim.c \
     src/tss2-tcti/tcti-common.c \
@@ -502,7 +502,7 @@ endif
 
 if ENABLE_TCTI_SWTPM
 test_unit_tcti_swtpm_CFLAGS  = $(CMOCKA_CFLAGS) $(TESTS_CFLAGS)
-test_unit_tcti_swtpm_LDADD   = $(CMOCKA_LIBS) $(libtss2_mu) $(libutil)
+test_unit_tcti_swtpm_LDADD   = $(CMOCKA_LIBS) $(libtss2_mu) $(libutil) $(libutilio)
 test_unit_tcti_swtpm_LDFLAGS = -Wl,--wrap=connect,--wrap=read,--wrap=select,--wrap=write
 test_unit_tcti_swtpm_SOURCES = test/unit/tcti-swtpm.c \
     src/tss2-tcti/tcti-common.c \
@@ -522,7 +522,7 @@ endif
 
 if ENABLE_TCTI_PCAP
 test_unit_tcti_pcap_CFLAGS  = $(CMOCKA_CFLAGS) $(TESTS_CFLAGS)
-test_unit_tcti_pcap_LDADD   = $(CMOCKA_LIBS) $(libtss2_mu) $(libutil)
+test_unit_tcti_pcap_LDADD   = $(CMOCKA_LIBS) $(libtss2_mu) $(libutil) $(libutilio)
 test_unit_tcti_pcap_LDFLAGS = -Wl,--wrap=getenv -Wl,--wrap=rand -Wl,--wrap=clock_gettime \
         -Wl,--wrap=open -Wl,--wrap=read -Wl,--wrap=write -Wl,--wrap=close \
         -Wl,--wrap=__clock_gettime64
@@ -652,7 +652,7 @@ test_unit_tctildr_getinfo_SOURCES = test/unit/tctildr-getinfo.c \
     src/tss2-tcti/tctildr.c
 
 test_unit_io_CFLAGS  = $(CMOCKA_CFLAGS) $(TESTS_CFLAGS)
-test_unit_io_LDADD   = $(CMOCKA_LIBS) $(libtss2_mu) $(libutil)
+test_unit_io_LDADD   = $(CMOCKA_LIBS) $(libtss2_mu) $(libutil) $(libutilio)
 test_unit_io_LDFLAGS = -Wl,--wrap=connect,--wrap=read,--wrap=socket,--wrap=write
 
 test_unit_key_value_parse_CFLAGS  = $(CMOCKA_CFLAGS) $(TESTS_CFLAGS)
@@ -1091,11 +1091,10 @@ test_tpmclient_tpmclient_int_SOURCES  = \
 
 test_integration_libtest_utils_la_CFLAGS = $(AM_CFLAGS) $(TESTS_CFLAGS)
 test_integration_libtest_utils_la_SOURCES = \
-    test/integration/sys-context-util.c test/integration/context-util.h \
     test/integration/sys-util.c    test/integration/sys-util.h \
     test/integration/sys-session-util.c test/integration/session-util.h \
-    test/integration/sys-test-options.c test/integration/test-options.h \
     test/integration/sys-entity-util.c test/integration/test.h \
+    test/integration/test-common.c test/integration/test-common.h \
     src/util/log.c
 
 test_integration_sys_asymmetric_encrypt_decrypt_int_CFLAGS  = $(AM_CFLAGS) $(TESTS_CFLAGS)
