@@ -58,6 +58,8 @@ void test_esys_teardown(TSS2_TEST_ESYS_CONTEXT *test_ctx);
 typedef struct {
     FAPI_CONTEXT *fapi_ctx;
     char *tmpdir;
+    char *fapi_profile;
+    TSS2_TEST_ESYS_CONTEXT test_esys_ctx;
     tpm_state *tpm_state;
 } TSS2_TEST_FAPI_CONTEXT;
 
@@ -65,5 +67,7 @@ int test_fapi_setup(TSS2_TEST_FAPI_CONTEXT **test_ctx);
 int test_fapi_checks_pre(TSS2_TEST_FAPI_CONTEXT *test_ctx);
 int test_fapi_checks_post(TSS2_TEST_FAPI_CONTEXT *test_ctx);
 void test_fapi_teardown(TSS2_TEST_FAPI_CONTEXT *test_ctx);
+void test_esys_teardown(TSS2_TEST_ESYS_CONTEXT *test_ctx);
+
 
 #endif                          /* TEST_COMMON_H */

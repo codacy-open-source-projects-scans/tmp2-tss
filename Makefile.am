@@ -626,8 +626,9 @@ lib_LTLIBRARIES += $(libtss2_policy)
 pkgconfig_DATA += lib/tss2-policy.pc
 
 src_tss2_policy_libtss2_policy_la_CFLAGS = $(AM_CFLAGS) -I$(srcdir)/src/tss2-policy -I$(srcdir)/src/tss2-fapi \
-    $(JSONC_CFLAGS)
-src_tss2_policy_libtss2_policy_la_LIBADD  = $(libtss2_esys) $(libtss2_mu) $(libutil) $(JSONC_LIBS) $(UUID_LIBS)
+    $(JSONC_CFLAGS) $(UUID_CFLAGS) $(CRYPTO_CFLAGS)
+src_tss2_policy_libtss2_policy_la_LIBADD  = $(libtss2_esys) $(libtss2_mu) $(libutil) $(JSONC_LIBS) $(UUID_LIBS) \
+	$(CRYPTO_LIBS)
 
 if HAVE_LD_VERSION_SCRIPT
 src_tss2_policy_libtss2_policy_la_LDFLAGS = -Wl,--version-script=$(srcdir)/lib/tss2-policy.map
@@ -793,7 +794,8 @@ src_tss2_fapi_libtss2_fapi_la_LIBADD  = $(libtss2_sys) $(libtss2_mu) $(libtss2_e
     $(libutil) $(libtss2_tctildr)
 
 src_tss2_fapi_libtss2_fapi_la_SOURCES = $(TSS2_FAPI_SRC)
-src_tss2_fapi_libtss2_fapi_la_CFLAGS  = $(AM_CFLAGS) -I$(srcdir)/src/tss2-fapi $(CRYPTO_CFLAGS) $(JSONC_CFLAGS) $(CURL_CFLAGS)
+src_tss2_fapi_libtss2_fapi_la_CFLAGS  = $(AM_CFLAGS) -I$(srcdir)/src/tss2-fapi $(CRYPTO_CFLAGS) $(JSONC_CFLAGS) \
+                                        $(UUID_CFLAGS)
 src_tss2_fapi_libtss2_fapi_la_LDFLAGS = $(AM_LDFLAGS) $(CRYPTO_LIBS) $(JSONC_LIBS) $(CURL_LIBS) $(UUID_LIBS)
 if HAVE_LD_VERSION_SCRIPT
 src_tss2_fapi_libtss2_fapi_la_LDFLAGS += -Wl,--version-script=$(srcdir)/lib/tss2-fapi.map
@@ -988,10 +990,24 @@ install-data-hook: install-dirs
 	fi
 
 uninstall-local:
+	-rm -r -f $(top_builddir)/ca
 	-rm $(DESTDIR)$(udevrulesdir)/$(udevrulesprefix)tpm-udev.rules
 	cd $(DESTDIR)$(man3dir) && \
 		[ -L Tss2_TctiLdr_Initialize_Ex.3 ] && \
 			rm -f Tss2_TctiLdr_Initialize_Ex.3 || true
+
+clean-hook:
+	-rm -r -f $(top_builddir)/ca
+
+check-hook:
+	-rm -r -f $(top_builddir)/ca
+
+prepare-check:
+if INIT_CA
+	$(top_srcdir)/script/ekca/init_ca.sh $(top_builddir)
+endif
+
+check: prepare-check
 
 EXTRA_DIST += \
     doc/doxygen.dox \

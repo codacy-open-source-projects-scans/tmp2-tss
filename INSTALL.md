@@ -84,15 +84,13 @@ $ sudo dnf install libuuid-devel
 ```
 
 ## Windows
-Windows dlls built using the Clang/LLVM "Platform Toolset" are currently
-prototypes. We have only tested using Visual Studio 2017 with the Universal
-C Runtime (UCRT) version 10.0.16299.0. Building the type marshaling library
-(tss2-mu.dll) and the system API (tss2-sapi.dll) should be as simple as
-loading the tpm2-tss solution (tpm2-tss.sln) with a compatible and properly
-configured version of Visual Studio 2017 and pressing the 'build' button.
+Windows dlls are built using the LLVM (clang-cl) toolset. We have only tested
+using Visual Studio 2019, but Visual Studio 2022 should also be supported.
+Building should be as simple as loading the tpm2-tss solution (tpm2-tss.sln) with
+a compatible and properly configured version of Visual Studio 2019+ and pressing the 'build' button.
 
 ### References
-Visual Studio 2017 with "Clang for Windows": https://blogs.msdn.microsoft.com/vcblog/2017/03/07/use-any-c-compiler-with-visual-studio/
+Visual Studio 2019+ with "Clang for Windows": https://learn.microsoft.com/en-us/cpp/build/clang-support-msbuild
 Universal CRT overview & setup instructions: https://docs.microsoft.com/en-us/cpp/porting/upgrade-your-code-to-the-universal-crt
 
 # Building From Source

@@ -21,6 +21,7 @@ EXTRA_DIST += $(srcdir)/script/int-log-compiler.sh \
               $(srcdir)/script/fint-log-compiler.sh \
               $(srcdir)/script/int-log-compiler-common.sh \
               $(srcdir)/script/ekca/create_ca.sh \
+              $(srcdir)/script/ekca/init_ca.sh \
               $(srcdir)/script/ekca/ek.cnf \
               $(srcdir)/script/ekca/intermed-ca.cnf \
               $(srcdir)/script/ekca/root-ca.cnf
@@ -42,39 +43,6 @@ test_helper_tpm_cmd_tcti_dummy_CFLAGS = $(TESTS_CFLAGS) -I$(srcdir)/test/integra
 test_helper_tpm_cmd_tcti_dummy_LDFLAGS = $(TESTS_LDFLAGS)
 test_helper_tpm_cmd_tcti_dummy_LDADD = $(TESTS_LDADD)
 endif #UNIT
-
-if ENABLE_INTEGRATION
-check_PROGRAMS += test/helper/tpm_startup
-test_helper_tpm_startup_CFLAGS = $(TESTS_CFLAGS) -I$(srcdir)/test/integration
-test_helper_tpm_startup_LDFLAGS = $(TESTS_LDFLAGS)
-test_helper_tpm_startup_LDADD = $(TESTS_LDADD)
-
-check_PROGRAMS += test/helper/tpm_transientempty
-test_helper_tpm_transientempty_CFLAGS = $(TESTS_CFLAGS) -I$(srcdir)/test/integration
-test_helper_tpm_transientempty_LDFLAGS = $(TESTS_LDFLAGS)
-test_helper_tpm_transientempty_LDADD = $(TESTS_LDADD)
-
-check_PROGRAMS += test/helper/tpm_dumpstate
-test_helper_tpm_dumpstate_CFLAGS = $(TESTS_CFLAGS) -I$(srcdir)/test/integration
-test_helper_tpm_dumpstate_LDFLAGS = $(TESTS_LDFLAGS)
-test_helper_tpm_dumpstate_LDADD = $(TESTS_LDADD)
-
-check_PROGRAMS += test/helper/tpm_getek
-test_helper_tpm_getek_CFLAGS = $(TESTS_CFLAGS) -I$(srcdir)/test/integration
-test_helper_tpm_getek_LDFLAGS = $(TESTS_LDFLAGS) -lcrypto
-test_helper_tpm_getek_LDADD = $(TESTS_LDADD)
-
-check_PROGRAMS += test/helper/tpm_getek_ecc
-test_helper_tpm_getek_ecc_CFLAGS = $(TESTS_CFLAGS) -I$(srcdir)/test/integration
-test_helper_tpm_getek_ecc_LDFLAGS = $(TESTS_LDFLAGS) -lcrypto
-test_helper_tpm_getek_ecc_LDADD = $(TESTS_LDADD)
-
-
-check_PROGRAMS += test/helper/tpm_writeekcert
-test_helper_tpm_writeekcert_CFLAGS = $(TESTS_CFLAGS) -I$(srcdir)/test/integration
-test_helper_tpm_writeekcert_LDFLAGS = $(TESTS_LDFLAGS)
-test_helper_tpm_writeekcert_LDADD = $(TESTS_LDADD)
-endif #ENABLE_INTEGRATION
 
 ### Rules to enerate binary test files for FAPI from b64 files.
 
@@ -258,6 +226,7 @@ ESYS_TESTS_INTEGRATION_MANDATORY = \
     test/integration/esys-certify-creation.int \
     test/integration/esys-certifyX509.int \
     test/integration/esys-certify.int \
+    test/integration/esys-check-auth-with-trailing-zero.int \
     test/integration/esys-clear-control.int \
     test/integration/esys-clockset.int \
     test/integration/esys-clockset-audit.int \
@@ -383,6 +352,8 @@ FAPI_TESTS_INTEGRATION = \
     test/integration/fapi-get-esys-blobs.fint \
     test/integration/fapi-get-random.fint \
     test/integration/fapi-platform-certificates.fint \
+	test/integration/fapi-import-ossl-key-ecc.fint \
+	test/integration/fapi-import-ossl-key-rsa.fint \
     test/integration/fapi-key-create-sign.fint \
     test/integration/fapi-key-create-he-sign.fint \
     test/integration/fapi-key-create-primary-sign.fint \
@@ -476,13 +447,15 @@ CLEANFILES += \
     test/integration/*.crt \
     test/integration/*.crl \
     test/integration/*.fint_state* \
+    test/integration/*.fint.* \
     test/integration/*.int_state* \
     test/integration/*.log \
     test/integration/*.fint_ek* \
     test/integration/*.fint_*-ca.pem \
     test/tpmclient/*.int_state* \
     test/tpmclient/*.log \
-    test/unit/*.log
+    test/unit/*.log \
+    NVChip
 
 if UNIT
 if ENABLE_TCTI_DEVICE
@@ -1285,6 +1258,13 @@ test_integration_esys_change_eps_int_SOURCES = \
     test/integration/esys-change-eps.int.c \
     test/integration/main-esys.c test/integration/test-esys.h
 
+test_integration_esys_check_auth_with_trailing_zero_int_CFLAGS  = $(TESTS_CFLAGS)
+test_integration_esys_check_auth_with_trailing_zero_int_LDADD   = $(TESTS_LDADD)
+test_integration_esys_check_auth_with_trailing_zero_int_LDFLAGS = $(TESTS_LDFLAGS)
+test_integration_esys_check_auth_with_trailing_zero_int_SOURCES = \
+    test/integration/esys-check-auth-with-trailing-zero.int.c \
+    test/integration/main-esys.c test/integration/test-esys.h
+
 test_integration_esys_clear_int_CFLAGS  = $(TESTS_CFLAGS)
 test_integration_esys_clear_int_LDADD   = $(TESTS_LDADD)
 test_integration_esys_clear_int_LDFLAGS = $(TESTS_LDFLAGS)
@@ -2013,7 +1993,7 @@ test_integration_sys_policy_authorizeNV_int_SOURCES = test/integration/main-sys.
 
 if FAPI
 test_integration_dlopen_fapi_get_random_fint_CFLAGS  = $(TESTS_CFLAGS) \
-    -DENABLE_WARN=1
+    -DENABLE_WARN=1 -DDLOPEN=1
 test_integration_dlopen_fapi_get_random_fint_LDADD   = $(TESTS_LDADD) $(LIBADD_DL)
 test_integration_dlopen_fapi_get_random_fint_LDFLAGS = $(TESTS_LDFLAGS)
 test_integration_dlopen_fapi_get_random_fint_SOURCES = \
@@ -2443,6 +2423,22 @@ test_integration_fapi_duplicate_fint_LDADD   = $(TESTS_LDADD)
 test_integration_fapi_duplicate_fint_LDFLAGS = $(TESTS_LDFLAGS)
 test_integration_fapi_duplicate_fint_SOURCES = \
     test/integration/fapi-duplicate.int.c \
+    test/integration/main-fapi.c test/integration/test-fapi.h
+
+test_integration_fapi_import_ossl_key_ecc_fint_CFLAGS  = $(TESTS_CFLAGS) \
+ -DFAPI_PROFILE=\"P_ECC\"
+test_integration_fapi_import_ossl_key_ecc_fint_LDADD   = $(TESTS_LDADD)
+test_integration_fapi_import_ossl_key_ecc_fint_LDFLAGS = $(TESTS_LDFLAGS)
+test_integration_fapi_import_ossl_key_ecc_fint_SOURCES = \
+    test/integration/fapi-import-ossl-key.int.c \
+    test/integration/main-fapi.c test/integration/test-fapi.h
+
+test_integration_fapi_import_ossl_key_rsa_fint_CFLAGS  = $(TESTS_CFLAGS) \
+ -DFAPI_PROFILE=\"P_RSA\"
+test_integration_fapi_import_ossl_key_rsa_fint_LDADD   = $(TESTS_LDADD)
+test_integration_fapi_import_ossl_key_rsa_fint_LDFLAGS = $(TESTS_LDFLAGS)
+test_integration_fapi_import_ossl_key_rsa_fint_SOURCES = \
+    test/integration/fapi-import-ossl-key.int.c \
     test/integration/main-fapi.c test/integration/test-fapi.h
 
 test_integration_fapi_pcr_test_fint_CFLAGS  = $(TESTS_CFLAGS)
