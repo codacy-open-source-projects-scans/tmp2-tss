@@ -76,6 +76,9 @@ Fapi_Unseal(
     check_not_null(context);
     check_not_null(path);
 
+    /* Cleanup command context. */
+    memset(&context->cmd, 0, sizeof(IFAPI_CMD_STATE));
+
     /* Check whether TCTI and ESYS are initialized */
     return_if_null(context->esys, "Command can't be executed in none TPM mode.",
                    TSS2_FAPI_RC_NO_TPM);
@@ -290,7 +293,6 @@ Fapi_Unseal_Finish(
             }
             SAFE_FREE(command->unseal_data);
 
-            context->state = _FAPI_STATE_INIT;
             break;
 
         statecasedefault(context->state);
@@ -306,6 +308,7 @@ error_cleanup:
     ifapi_cleanup_ifapi_object(&context->createPrimary.pkey_object);
     ifapi_session_clean(context);
     SAFE_FREE(command->keyPath);
+    context->state = _FAPI_STATE_INIT;
     LOG_TRACE("finished");
     return r;
 }

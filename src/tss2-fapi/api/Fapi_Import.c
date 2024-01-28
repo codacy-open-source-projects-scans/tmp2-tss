@@ -156,6 +156,9 @@ Fapi_Import_Async(
     check_not_null(path);
     check_not_null(importData);
 
+    /* Cleanup command context. */
+    memset(&context->cmd, 0, sizeof(IFAPI_CMD_STATE));
+
     /* Helpful alias pointers */
     IFAPI_ImportKey * command = &context->cmd.ImportKey;
     IFAPI_OBJECT *object = &command->object;
@@ -753,5 +756,6 @@ error_cleanup:
     ifapi_cleanup_ifapi_object(&context->loadKey.auth_object);
     ifapi_cleanup_ifapi_object(context->loadKey.key_object);
     ifapi_cleanup_ifapi_object(&context->createPrimary.pkey_object);
+    context->state = _FAPI_STATE_INIT;
     return r;
 }

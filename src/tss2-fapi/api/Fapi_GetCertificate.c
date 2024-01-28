@@ -135,6 +135,10 @@ Fapi_GetCertificate_Async(
     check_not_null(context);
     check_not_null(path);
 
+    if (context->state != _FAPI_STATE_INIT) {
+        return_error(TSS2_FAPI_RC_BAD_SEQUENCE, "Invalid State");
+    }
+
     r = ifapi_non_tpm_mode_init(context);
     return_if_error(r, "Initialize GetCertificate");
 
@@ -182,6 +186,9 @@ Fapi_GetCertificate_Finish(
     /* Check for NULL parameters */
     check_not_null(context);
     check_not_null(x509certData);
+
+    /* Cleanup command context. */
+    memset(&context->cmd, 0, sizeof(IFAPI_CMD_STATE));
 
     /* Helpful alias pointers */
     IFAPI_Key_SetCertificate *command = &context->cmd.Key_SetCertificate;

@@ -144,6 +144,9 @@ Fapi_PcrRead_Async(
     /* Check for NULL parameters */
     check_not_null(context);
 
+    /* Cleanup command context. */
+    memset(&context->cmd, 0, sizeof(IFAPI_CMD_STATE));
+
     /* Helpful alias pointers */
     IFAPI_PCR * command = &context->cmd.pcr;
 
@@ -258,7 +261,7 @@ Fapi_PcrRead_Finish(
             fallthrough;
 
         statecase(context->state, PCR_READ_READ_EVENT_LIST);
-            r = ifapi_eventlog_get_finish(&context->eventlog, &context->io, pcrLog);
+        r = ifapi_eventlog_get_finish(&context->eventlog, NULL, &context->io, pcrLog);
             return_try_again(r);
             goto_if_error(r, "Error getting event log", cleanup);
 
@@ -266,7 +269,6 @@ Fapi_PcrRead_Finish(
                 *pcrValue = command->pcrValue;
             if (pcrValueSize)
                 *pcrValueSize = command->pcrValueSize;
-            context->state = _FAPI_STATE_INIT;
             break;
 
         statecasedefault(context->state);
@@ -279,6 +281,7 @@ cleanup:
         SAFE_FREE(command->pcrValue);
     }
     SAFE_FREE(command->pcrValues);
+    context->state = _FAPI_STATE_INIT;
     LOG_TRACE("finished");
     return r;
 }

@@ -193,13 +193,6 @@ typedef struct {
     TPMS_NV_PUBLIC                               public;    /**< Template for public data */
 } IFAPI_NV_TEMPLATE;
 
-/** Type for representing a external public key
- */
-typedef struct {
-    TPMT_SIG_SCHEME                          sig_scheme;    /**< Signature scheme used for quote. */
-    TPMS_ATTEST                                  attest;    /**< Attestation data from Quote */
-} FAPI_QUOTE_INFO;
-
 
 /** The states for the FAPI's NV read state */
 enum _FAPI_STATE_NV_READ {
@@ -299,7 +292,8 @@ typedef struct {
     uint32_t const *hashAlgs;
     uint32_t *hashAlgs2;
     size_t numHashAlgs;
-    char    const *quoteInfo;
+    char const *quoteInfo;
+    char *certificate;
     TPM2B_ATTEST *tpm_quoted;
     TPMT_SIGNATURE *tpm_signature;
     uint8_t *signature;

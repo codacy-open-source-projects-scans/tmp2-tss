@@ -175,6 +175,13 @@ Fapi_VerifyQuote_Async(
     check_not_null(quoteInfo);
     check_not_null(signature);
 
+    /* Cleanup command context. */
+    memset(&context->cmd, 0, sizeof(IFAPI_CMD_STATE));
+
+    if (context->state != _FAPI_STATE_INIT) {
+        return_error(TSS2_FAPI_RC_BAD_SEQUENCE, "Invalid State");
+    }
+
     /* Check for invalid parameters */
     if (qualifyingData == NULL && qualifyingDataSize != 0) {
         LOG_ERROR("qualifyingData is NULL but qualifyingDataSize is not 0");
@@ -262,7 +269,6 @@ Fapi_VerifyQuote_Finish(
     TSS2_RC r;
     IFAPI_OBJECT key_object;
     TPM2B_ATTEST attest2b;
-    TPM2B_DIGEST pcr_digest;
 
     /* Check for NULL parameters */
     check_not_null(context);
@@ -319,11 +325,10 @@ Fapi_VerifyQuote_Finish(
 
             /* Recalculate and verify the PCR digests. */
             r = ifapi_calculate_pcr_digest(command->event_list,
-                                           &command->fapi_quote_info, &pcr_digest);
+                                           &command->fapi_quote_info);
 
             goto_if_error(r, "Verify event list.", error_cleanup);
 
-            context->state = _FAPI_STATE_INIT;
             break;
 
         statecasedefault(context->state);
@@ -342,6 +347,7 @@ error_cleanup:
     SAFE_FREE(command->signature);
     SAFE_FREE(command->quoteInfo);
     SAFE_FREE(command->logData);
+    context->state = _FAPI_STATE_INIT;
     LOG_TRACE("finished");
     return r;
 }

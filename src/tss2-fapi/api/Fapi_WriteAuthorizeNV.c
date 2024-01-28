@@ -156,6 +156,9 @@ Fapi_WriteAuthorizeNv_Async(
     check_not_null(nvPath);
     check_not_null(policyPath);
 
+    /* Cleanup command context. */
+    memset(&context->cmd, 0, sizeof(IFAPI_CMD_STATE));
+
     /* Helpful alias pointers */
     IFAPI_api_WriteAuthorizeNv * command = &context->cmd.WriteAuthorizeNV;
     IFAPI_NV_Cmds * nvCmd = &context->nv_cmd;
@@ -333,7 +336,6 @@ Fapi_WriteAuthorizeNv_Finish(
             /* Cleanup the session used for authorizing access to the NV index. */
             r = ifapi_cleanup_session(context);
             try_again_or_error_goto(r, "Cleanup", error_cleanup);
-            context->state = _FAPI_STATE_INIT;
             break;
 
         statecasedefault(context->state);
@@ -349,6 +351,7 @@ error_cleanup:
     ifapi_cleanup_ifapi_object(context->loadKey.key_object);
     ifapi_cleanup_ifapi_object(&context->createPrimary.pkey_object);
     ifapi_cleanup_ifapi_object(object);
+    context->state = _FAPI_STATE_INIT;
     LOG_TRACE("finished");
     return r;
 }
