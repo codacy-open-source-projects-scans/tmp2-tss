@@ -2018,7 +2018,7 @@ ifapi_extend_vpcr(
     TSS2_RC r;
     size_t i, j;
     size_t event_size, size;
-    IFAPI_CRYPTO_CONTEXT_BLOB *cryptoContext;
+    IFAPI_CRYPTO_CONTEXT_BLOB *cryptoContext = NULL;
     bool zero_digest = false;
 
     LOGBLOB_TRACE(&vpcr->buffer[0], vpcr->size, "Old vpcr value");
@@ -2051,7 +2051,20 @@ ifapi_extend_vpcr(
         }
     }
     if (event->digests.count > 0 && i == event->digests.count && !zero_digest) {
-        LOG_ERROR("No digest for bank %"PRIu16" found in event", bank);
+        LOG_ERROR("No digest for bank %"PRIu16" found in event."
+                  "\n\nThe bank for each pcr register can be set in the FAPI profile. If, for example,"
+                  "\nno  digest for the default bank sha256 (11) exists in the eventlog of a"
+                  "\ncertain PCR register the PCR selection has to be adapted. E.g.:"
+                  "\n\n\"pcr_selection\": ["
+                  "\n      { \"hash\": \"TPM2_ALG_SHA1\","
+                  "\n         \"pcrSelect\": [ 0, 10 ],"
+                  "\n      },"
+                  "\n      { \"hash\": \"TPM2_ALG_SHA256\","
+                  "\n        \"pcrSelect\": [ 1, 2, ,3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15,"
+                  "16, 17, 18, 19, 20, 21, 22, 23 ]"
+                  "\n      }"
+                  "\n],"
+                  , bank);
         return TSS2_FAPI_RC_BAD_VALUE;
     }
     LOGBLOB_TRACE(&vpcr->buffer[0], vpcr->size, "New vpcr value");
@@ -2274,7 +2287,6 @@ ifapi_calculate_pcr_digest(
     const FAPI_QUOTE_INFO *quote_info)
 {
     TSS2_RC r;
-    IFAPI_CRYPTO_CONTEXT_BLOB *cryptoContext = NULL;
     IFAPI_PCR_REG pcrs[TPM2_MAX_PCRS];
 
     const TPML_PCR_SELECTION *pcr_selection;
@@ -2304,12 +2316,8 @@ ifapi_calculate_pcr_digest(
     r = ifapi_calculate_pcrs(jso_event_list, pcr_selection, pcr_digest_hash_alg,
                              &quote_info->attest.attested.quote.pcrDigest,
                              &pcrs[0]);
-    goto_if_error(r, "Compute PCRs", error_cleanup);
+    return_if_error(r, "Compute PCRs");
 
-
-error_cleanup:
-    if (cryptoContext)
-        ifapi_crypto_hash_abort(&cryptoContext);
     return r;
 }
 

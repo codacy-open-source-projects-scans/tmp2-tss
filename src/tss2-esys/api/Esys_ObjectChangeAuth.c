@@ -171,6 +171,13 @@ Esys_ObjectChangeAuth_Async(
     /* Retrieve the metadata objects for provided handles */
     r = esys_GetResourceObject(esysContext, objectHandle, &objectHandleNode);
     return_state_if_error(r, _ESYS_STATE_INIT, "objectHandle unknown.");
+
+    if (!objectHandleNode) {
+        LOG_ERROR("Object for Esys handle %x not found.", objectHandle);
+        esysContext->state = _ESYS_STATE_INIT;
+        return TSS2_FAPI_RC_BAD_VALUE;
+    }
+
     r = esys_GetResourceObject(esysContext, parentHandle, &parentHandleNode);
     return_state_if_error(r, _ESYS_STATE_INIT, "parentHandle unknown.");
 
@@ -187,9 +194,7 @@ Esys_ObjectChangeAuth_Async(
 
     /* Initial invocation of SAPI to prepare the command buffer with parameters */
     r = Tss2_Sys_ObjectChangeAuth_Prepare(esysContext->sys,
-                                          (objectHandleNode == NULL)
-                                           ? TPM2_RH_NULL
-                                           : objectHandleNode->rsrc.handle,
+                                          objectHandleNode->rsrc.handle,
                                           (parentHandleNode == NULL)
                                            ? TPM2_RH_NULL
                                            : parentHandleNode->rsrc.handle,
