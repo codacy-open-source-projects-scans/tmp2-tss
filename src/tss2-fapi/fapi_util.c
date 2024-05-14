@@ -5,32 +5,26 @@
  *******************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h" // IWYU pragma: keep
 #endif
 
-#include <stdio.h>
-#include <string.h>
-#include <stdarg.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <ctype.h>
-#include <dirent.h>
+#include <json-c/json.h>               // for json_object, json_object_put, json_object_to_js...
+#include <stdlib.h>                    // for free, calloc, malloc
+#include <string.h>                    // for memcpy, strcmp, memset, strlen
+#include <strings.h>                   // for strcasecmp
 
-#include "tss2_mu.h"
+#include "fapi_crypto.h"               // for ifapi_get_hash_alg_for_size
 #include "fapi_util.h"
-#include "fapi_crypto.h"
-#include "ifapi_helpers.h"
-#include "ifapi_json_serialize.h"
-#include "ifapi_json_deserialize.h"
-#include "tpm_json_deserialize.h"
-#include "fapi_policy.h"
-#include "ifapi_policyutil_execute.h"
+#include "ifapi_config.h"              // for IFAPI_CONFIG
+#include "ifapi_helpers.h"             // for free_string_list, ifapi_path_l...
+#include "ifapi_json_serialize.h"      // for ifapi_json_IFAPI_OBJECT_serialize
+#include "ifapi_macros.h"              // for statecase, fallthrough, goto_i...
+#include "ifapi_policy.h"              // for ifapi_calculate_tree
+#include "ifapi_policyutil_execute.h"  // for ifapi_policyutil_execute, ifap...
+#include "tss2_policy.h"               // for TSS2_OBJECT
+
 #define LOGMODULE fapi
-#include "util/log.h"
-#include "util/aux_util.h"
+#include "util/log.h"                  // for SAFE_FREE, goto_if_error, retu...
 
 /** State machine for flushing objects.
  *
@@ -760,38 +754,8 @@ ifapi_init_primary_finish(FAPI_CONTEXT *context, TSS2_KEY_TYPE ktype, IFAPI_OBJE
         if (base_rc(r) == TSS2_BASE_RC_TRY_AGAIN)
             return TSS2_FAPI_RC_TRY_AGAIN;
 
-        /* Retry with authorization callback after trial with null auth */
-        if (number_rc(r) == TPM2_RC_BAD_AUTH
-            && hierarchy->misc.hierarchy.with_auth == TPM2_NO) {
-            char *description;
-            r = ifapi_get_description(hierarchy, &description);
-            return_if_error(r, "Get description");
+        goto_if_error_reset_state(r, "FAPI Provision", error_cleanup);
 
-            r = ifapi_set_auth(context, hierarchy, description);
-            SAFE_FREE(description);
-            goto_if_error_reset_state(r, "CreatePrimary", error_cleanup);
-
-            r = Esys_CreatePrimary_Async(context->esys, hierarchy->public.handle,
-                                         (context->session1 == ESYS_TR_NONE) ?
-                                         ESYS_TR_PASSWORD : context->session1,
-                                         ESYS_TR_NONE, ESYS_TR_NONE,
-                                         &context->cmd.Provision.inSensitive,
-                                         &context->cmd.Provision.public_templ.public,
-                                         &context->cmd.Provision.outsideInfo,
-                                         &context->cmd.Provision.creationPCR);
-            goto_if_error_reset_state(r, "CreatePrimary", error_cleanup);
-
-            if (ktype == TSS2_EK) {
-                context->state = PROVISION_AUTH_EK_AUTH_SENT;
-            } else {
-                context->state = PROVISION_AUTH_SRK_AUTH_SENT;
-            }
-            hierarchy->misc.hierarchy.with_auth = TPM2_YES;
-            return TSS2_FAPI_RC_TRY_AGAIN;
-
-        } else {
-            goto_if_error_reset_state(r, "FAPI Provision", error_cleanup);
-        }
         /* Set EK or SRK handle in context. */
         if (ktype == TSS2_EK) {
             context->ek_handle = primaryHandle;

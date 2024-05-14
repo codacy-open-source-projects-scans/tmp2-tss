@@ -5,18 +5,18 @@
  * All rights reserved.
  ***********************************************************************/
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h" // IWYU pragma: keep
 #endif
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <arpa/inet.h>
+#include <netinet/in.h>       // for htonl, htons
+#include <stdio.h>            // for NULL
+#include <stdlib.h>           // for calloc, free
 
-#include <setjmp.h>
-#include <cmocka.h>
-
-#include "tss2_sys.h"
-#include "sysapi_util.h"
+#include "../helper/cmocka_all.h"           // for assert_int_equal, cmocka_unit_test_setu...
+#include "sysapi_util.h"      // for _TSS2_SYS_CONTEXT_BLOB, CopyCommandHeader
+#include "tss2_common.h"      // for UINT32, UINT8
+#include "tss2_sys.h"         // for Tss2_Sys_GetContextSize, TSS2_SYS_CONTEXT
+#include "tss2_tpm2_types.h"  // for TPM2_CC, TPM2_CC_GetCapability, TPM2_ST...
 
 #define MAX_SIZE_CTX 4096
 /**

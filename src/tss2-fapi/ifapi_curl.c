@@ -1,21 +1,33 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"             // for HAVE_CURL_URL_STRERROR
 #endif
 
-#include <string.h>
+#include <curl/curl.h>          // for curl_easy_strerror, CURLE_OK, curl_ea...
+#include <openssl/asn1.h>       // for asn1_string_st
+#include <openssl/bio.h>        // for BIO_free, BIO_new_mem_buf
+#include <openssl/obj_mac.h>    // for NID_crl_distribution_points, NID_info...
+#include <openssl/pem.h>        // for PEM_read_bio_X509
+#include <openssl/safestack.h>  // for STACK_OF
+#include <openssl/x509.h>       // for X509_free, X509_STORE_add_cert, X509_...
+#include <openssl/x509v3.h>     // for DIST_POINT_NAME, GENERAL_NAME, ACCESS...
+#include <stdbool.h>            // for bool, false, true
+#include <stdlib.h>             // for free, realloc
+#include <string.h>             // for memcpy, strdup, strlen
 
-#include <curl/curl.h>
-#include <openssl/x509v3.h>
-#include <openssl/err.h>
-#include <openssl/pem.h>
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
+#include <openssl/aes.h>
+#else
+#include <openssl/types.h>      // for X509, ASN1_IA5STRING, X509_CRL, DIST_...
+#endif
 
-#include "fapi_certificates.h"
-#include "fapi_util.h"
-#include "util/aux_util.h"
+#include "fapi_certificates.h"  // for root_cert_list
+#include "fapi_int.h"           // for OSSL_FREE
 #include "ifapi_curl.h"
+#include "ifapi_macros.h"       // for goto_if_null2
+
 #define LOGMODULE fapi
-#include "util/log.h"
+#include "util/log.h"           // for LOG_ERROR, goto_error, SAFE_FREE, got...
 
 static X509
 *get_cert_from_buffer(unsigned char *cert_buffer, size_t cert_buffer_size)
@@ -174,6 +186,16 @@ ifapi_curl_verify_ek_cert(
     ek_cert = get_X509_from_pem(ek_cert_pem);
     goto_if_null2(ek_cert, "Failed to convert PEM certificate to DER.",
                   r, TSS2_FAPI_RC_BAD_VALUE, cleanup);
+
+    if (is_self_signed(ek_cert)) {
+        /* A self signed certificate was stored in the TPM and ek_cert_less was not set.*/
+        goto_error(r, TSS2_FAPI_RC_NO_CERT,
+                   "A self signed EK  certifcate for current crypto profile was found. "
+                   "You may want to switch the profile in fapi-config or "
+                   "set the ek_cert_less or ek_cert_file options in fapi-config. "
+                   "See also https://tpm2-software.github.io/2020/07/22/Fapi_Crypto_Profiles.html",
+                   cleanup);
+    }
 
     if (intermed_cert_pem) {
         intermed_cert = get_X509_from_pem(intermed_cert_pem);

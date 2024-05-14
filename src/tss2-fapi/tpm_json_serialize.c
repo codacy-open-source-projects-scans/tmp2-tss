@@ -5,15 +5,18 @@
  ******************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h" // IWYU pragma: keep
 #endif
 
-#include <stdio.h>
+#include <inttypes.h>            // for PRIuPTR, PRIx32, uint8_t, PRIi32
+#include <json-c/json.h>         // for json_object, json_object_put, json_object_to_js...
+#include <stdio.h>               // for NULL, size_t, sprintf
 
+#include "ifapi_macros.h"        // for check_oom, return_error2
 #include "tpm_json_serialize.h"
+
 #define LOGMODULE fapijson
-#include "util/log.h"
-#include "util/aux_util.h"
+#include "util/log.h"            // for return_error, return_if_error, retur...
 
 #define CHECK_IN_LIST(type, needle, ...) \
     type tab[] = { __VA_ARGS__ }; \
@@ -24,6 +27,20 @@
     if (i == sizeof(tab) / sizeof(tab[0])) { \
         LOG_ERROR("Bad value"); \
         return TSS2_FAPI_RC_BAD_VALUE; \
+    }
+
+#define JSON_CLEAR(jso) \
+    if (jso) {                   \
+        json_object_put(jso); \
+    }
+
+#define return_if_jso_error(r,msg, jso)       \
+    if (r != TSS2_RC_SUCCESS) { \
+        LOG_ERROR("%s " TPM2_ERROR_FORMAT, msg, TPM2_ERROR_TEXT(r)); \
+        if (jso) {                                                   \
+            json_object_put(jso);                                    \
+        } \
+        return r;  \
     }
 
 /** Serialize a TPMS_EMPTY.

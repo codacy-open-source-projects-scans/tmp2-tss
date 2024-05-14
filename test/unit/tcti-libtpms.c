@@ -5,7 +5,7 @@
  ***********************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h" // IWYU pragma: keep
 #endif
 
 #include <inttypes.h>
@@ -16,7 +16,7 @@
 #include <string.h>
 
 #include <setjmp.h>
-#include <cmocka.h>
+#include "../helper/cmocka_all.h"
 #include <unistd.h>
 
 #include "tss2_tcti.h"

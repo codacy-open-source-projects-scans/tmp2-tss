@@ -5,19 +5,41 @@
  ******************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"               // for MAXLOGLEVEL
 #endif
 
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
+#include <ctype.h>                // for tolower, isxdigit
+#include <inttypes.h>             // for int64_t, uint8_t, PRId64, PRIu32
+#include <json-c/json.h>          // for json_object, json_object_put, json_object_to_js...
+#include <stdarg.h>               // for va_arg, va_end, va_list, va_start
+#include <stdio.h>                // for sscanf
+#include <stdlib.h>               // for malloc
+#include <string.h>               // for memset, strlen, strncmp
+#include <strings.h>              // for strcasecmp, strncasecmp
 
-#include "ifapi_helpers.h"
+#include "ifapi_helpers.h"        // for ifapi_check_json_object_fields
+#include "ifapi_macros.h"         // for return_if_error2, return_error2
 #include "tpm_json_deserialize.h"
-#define LOGMODULE fapijson
-#include "util/log.h"
-#include "util/aux_util.h"
 
+#define LOGMODULE fapijson
+#include "util/log.h"             // for LOG_ERROR, LOG_TRACE, return_if_error
+
+/* Deserialize according to the rules of parenttype and then filter against values
+   provided in the ... list. */
+#define SUBTYPE_FILTER(type, parenttype, ...) \
+    TSS2_RC r; \
+    type tab[] = { __VA_ARGS__ }; \
+    type v; \
+    r = ifapi_json_ ## parenttype ## _deserialize(jso, &v); \
+    return_if_error(r, "Bad value"); \
+    for (size_t i = 0; i < sizeof(tab) / sizeof(tab[0]); i++) { \
+        if (v == tab[i]) { \
+            *out = v; \
+            return TSS2_RC_SUCCESS; \
+        } \
+    } \
+    LOG_ERROR("Bad sub-value"); \
+    return TSS2_FAPI_RC_BAD_VALUE;
 
 /** Parse JSON data and create JSON object.
  *

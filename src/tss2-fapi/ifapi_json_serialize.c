@@ -5,24 +5,50 @@
  ******************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h" // IWYU pragma: keep
 #endif
 
-#include <stdio.h>
-#include <string.h>
+#include <inttypes.h>                     // for PRIx32, uint8_t
+#include <json-c/json.h>                  // for json_object, json_object_put, json_object_to_js...
+#include <stdbool.h>                      // for true
+#include <stdio.h>                        // for NULL, size_t, sprintf
+#include <stdlib.h>                       // for malloc
 
+#include "ifapi_config.h"                 // for IFAPI_CONFIG
 #include "ifapi_json_serialize.h"
-#include "tpm_json_serialize.h"
-#include "fapi_policy.h"
-#include "tpm_json_deserialize.h"
-#include "ifapi_policy_json_serialize.h"
-#include "ifapi_config.h"
-#include "ifapi_helpers.h"
+#include "ifapi_macros.h"                 // for check_oom, goto_if_null2
+#include "ifapi_policy_json_serialize.h"  // for ifapi_json_TPMS_POLICY_seri...
+#include "tpm_json_deserialize.h"         // for ifapi_parse_json
+#include "tpm_json_serialize.h"           // for ifapi_json_TPMI_YES_NO_seri...
+#include "tss2_tpm2_types.h"              // for TPM2B_DIGEST, TPM2B_PUBLIC
 
 #define LOGMODULE fapijson
-#include "util/log.h"
-#include "util/aux_util.h"
+#include "util/log.h"                     // for return_error, return_if_error
 
+#define CHECK_IN_LIST(type, needle, ...) \
+    type tab[] = { __VA_ARGS__ }; \
+    size_t i; \
+    for(i = 0; i < sizeof(tab) / sizeof(tab[0]); i++) \
+        if (needle == tab[i]) \
+            break; \
+    if (i == sizeof(tab) / sizeof(tab[0])) { \
+        LOG_ERROR("Bad value"); \
+        return TSS2_FAPI_RC_BAD_VALUE; \
+    }
+
+#define JSON_CLEAR(jso) \
+    if (jso) {                   \
+        json_object_put(jso); \
+    }
+
+#define return_if_jso_error(r,msg, jso)       \
+    if (r != TSS2_RC_SUCCESS) { \
+        LOG_ERROR("%s " TPM2_ERROR_FORMAT, msg, TPM2_ERROR_TEXT(r)); \
+        if (jso) {                                                   \
+            json_object_put(jso);                                    \
+        } \
+        return r;  \
+    }
 
 /** Serialize a character string to json.
  *
