@@ -141,7 +141,7 @@ Fapi_GetTpmBlobs_Async(
     check_not_null(context);
     check_not_null(path);
 
-    if (context->state != _FAPI_STATE_INIT) {
+    if (context->state != FAPI_STATE_INIT) {
         return_error(TSS2_FAPI_RC_BAD_SEQUENCE, "Invalid State");
     }
 
@@ -217,6 +217,7 @@ Fapi_GetTpmBlobs_Finish(
 
             /* Marshal the public data to the output parameter. */
             if (tpm2bPublic && tpm2bPublicSize) {
+                // NOLINTNEXTLINE(bugprone-sizeof-expression)
                 *tpm2bPublic = malloc(sizeof(uint8_t) * sizeof(TPM2B_PUBLIC));
                 goto_if_null(*tpm2bPublic, "Out of memory.",
                         TSS2_FAPI_RC_MEMORY, error_cleanup);
@@ -263,7 +264,7 @@ Fapi_GetTpmBlobs_Finish(
 
             /* Cleanup any intermediate results and state stored in the context. */
             ifapi_cleanup_ifapi_object(&object);
-            context->state = _FAPI_STATE_INIT;
+            context->state = FAPI_STATE_INIT;
             LOG_TRACE("finished");
             return TSS2_RC_SUCCESS;
 
@@ -278,6 +279,6 @@ error_cleanup:
     ifapi_cleanup_ifapi_object(context->loadKey.key_object);
     ifapi_cleanup_ifapi_object(&context->createPrimary.pkey_object);
     LOG_TRACE("finished");
-    context->state = _FAPI_STATE_INIT;
+    context->state = FAPI_STATE_INIT;
     return r;
 }

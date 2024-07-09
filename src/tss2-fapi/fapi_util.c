@@ -435,7 +435,7 @@ ifapi_set_auth(
         if (auth != NULL) {
             authValue.size = strlen(auth);
             if (authValue.size > sizeof(TPMU_HA)) {
-                return_error2(TSS2_FAPI_RC_BAD_VALUE, "Size of auth value %u > %lu",
+                return_error2(TSS2_FAPI_RC_BAD_VALUE, "Size of auth value %"PRIu16" > %zu",
                               authValue.size, sizeof(TPMU_HA));
             }
             memcpy(&authValue.buffer[0], auth, authValue.size);
@@ -1117,7 +1117,7 @@ ifapi_session_init(FAPI_CONTEXT *context)
 
     return_if_null(context->esys, "No context", TSS2_FAPI_RC_NO_TPM);
 
-    if (context->state != _FAPI_STATE_INIT) {
+    if (context->state != FAPI_STATE_INIT) {
         return_error(TSS2_FAPI_RC_BAD_SEQUENCE, "Invalid State");
     }
 
@@ -1145,7 +1145,7 @@ ifapi_non_tpm_mode_init(FAPI_CONTEXT *context)
     LOG_TRACE("call");
     return_if_null(context, "No context", TSS2_FAPI_RC_BAD_REFERENCE);
 
-    if (context->state != _FAPI_STATE_INIT) {
+    if (context->state != FAPI_STATE_INIT) {
         return_error(TSS2_FAPI_RC_BAD_SEQUENCE, "Invalid State");
     }
 
@@ -2697,7 +2697,7 @@ error_cleanup:
     return r;
 }
 
-#define min(X,Y) (X>Y)?Y:X
+#define min(X,Y) ((X)>(Y))?(Y):X
 
 /** State machine to retrieve random data from TPM.
  *
@@ -4128,28 +4128,29 @@ ifapi_free_objects(FAPI_CONTEXT *context)
     }
 }
 
+// NOLINTBEGIN(bugprone-macro-parentheses)
 #define ADD_CAPABILITY_INFO(capability, field, subfield, max_count, property_count) \
-    if (context->cmd.GetInfo.fetched_data->data.capability.count > max_count - property_count) { \
-        context->cmd.GetInfo.fetched_data->data.capability.count = max_count - property_count; \
+    if (context->cmd.GetInfo.fetched_data->data.capability.count > (max_count) - (property_count)) { \
+        context->cmd.GetInfo.fetched_data->data.capability.count = (max_count) - (property_count); \
     } \
 \
     memmove(&context->cmd.GetInfo.capability_data->data.capability.field[property_count], \
             context->cmd.GetInfo.fetched_data->data.capability.field, \
             context->cmd.GetInfo.fetched_data->data.capability.count \
             * sizeof(context->cmd.GetInfo.fetched_data->data.capability.field[0]));       \
-    property_count += context->cmd.GetInfo.fetched_data->data.capability.count; \
+    (property_count) += context->cmd.GetInfo.fetched_data->data.capability.count; \
 \
     context->cmd.GetInfo.capability_data->data.capability.count = property_count; \
 \
-    if (more_data && property_count < count \
+    if (more_data && (property_count) < count \
         && context->cmd.GetInfo.fetched_data->data.capability.count) {  \
         context->cmd.GetInfo.property \
             = context->cmd.GetInfo.capability_data->data. \
-            capability.field[property_count - 1]subfield + 1;   \
+            capability.field[(property_count) - 1]subfield + 1;   \
     } else { \
         more_data = false; \
     }
-
+// NOLINTEND(bugprone-macro-parentheses)
 
 /** Prepare the receiving of capability data.
  *
@@ -4310,12 +4311,12 @@ ifapi_capability_get(FAPI_CONTEXT *context, TPM2_CAP capability,
         context->state = GET_INFO_GET_CAP_MORE;
         return TSS2_FAPI_RC_TRY_AGAIN;
     } else {
-        context->state = _FAPI_STATE_INIT;
+        context->state = FAPI_STATE_INIT;
         return TSS2_RC_SUCCESS;
     }
 
 error_cleanup:
-    context->state = _FAPI_STATE_INIT;
+    context->state = FAPI_STATE_INIT;
     SAFE_FREE(context->cmd.GetInfo.capability_data);
     SAFE_FREE(context->cmd.GetInfo.fetched_data);
     return r;

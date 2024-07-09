@@ -24,7 +24,7 @@
 #define LOGMODULE fapi
 #include "util/log.h"        // for LOG_TRACE, SAFE_FREE, return_error, LOGB...
 
-#define FAPI_MAX_APP_DATA_SIZE 10*1024*1024
+#define FAPI_MAX_APP_DATA_SIZE (10*1024*1024)
 
 /** One-Call function for Fapi_SetAppData
  *
@@ -144,7 +144,7 @@ Fapi_SetAppData_Async(
     /* Cleanup command context. */
     memset(&context->cmd, 0, sizeof(IFAPI_CMD_STATE));
 
-    if (context->state != _FAPI_STATE_INIT) {
+    if (context->state != FAPI_STATE_INIT) {
         return_error(TSS2_FAPI_RC_BAD_SEQUENCE, "Invalid State");
     }
 
@@ -289,7 +289,7 @@ error_cleanup:
     ifapi_cleanup_ifapi_object(context->loadKey.key_object);
     ifapi_cleanup_ifapi_object(&context->createPrimary.pkey_object);
     SAFE_FREE(command->object_path);
-    context->state = _FAPI_STATE_INIT;
+    context->state = FAPI_STATE_INIT;
     LOG_TRACE("finished");
     return r;
 }

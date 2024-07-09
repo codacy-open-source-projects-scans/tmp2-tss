@@ -1010,7 +1010,7 @@ compare_policy_digest(
             if (digest_values->digests[i].hashAlg == hash_alg) {
                 if (memcmp(&digest_values->digests[i].digest,
                            &authPolicy->buffer[0],
-                           authPolicy->size))
+                           authPolicy->size) != 0)
                     continue;
                 *equal = true;
                 return TSS2_RC_SUCCESS;
@@ -1165,7 +1165,7 @@ search_policy(
         break;
 
     default:
-        context->state = _FAPI_STATE_INTERNALERROR;
+        context->state = FAPI_STATE_INTERNALERROR;
         goto_error(r, TSS2_FAPI_RC_BAD_VALUE, "Invalid state for load key.", cleanup);
     }
     context->fsearch.state = FSEARCH_INIT;

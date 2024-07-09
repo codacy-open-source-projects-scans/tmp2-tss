@@ -56,7 +56,7 @@
 #define TCP_URGENT_PTR_UNUSED       0x0000
 
 #define SIZEOF_IN_OCTETS(x)         (sizeof (x)/sizeof (uint32_t))
-#define TO_MULTIPLE_OF_4_BYTE(x)    (((x)-1)/4*4+4) * !!(x)
+#define TO_MULTIPLE_OF_4_BYTE(x)    ((((x)-1)/4*4+4) * !!(x))
 
 /*
  * complies to pcap-ng (IETF RFC draft-tuexen-opsawg-pcapng-01)
@@ -439,7 +439,7 @@ pcap_write_enhanced_packet_block (
         memcpy (buf, &footer, sizeof (epb_footer));
     }
 
-    return pdu_len;
+    return (int) pdu_len;
 }
 
 static int
@@ -491,7 +491,7 @@ pcap_write_ip_packet (
                                 direction);
     }
 
-    return pdu_len;
+    return (int) pdu_len;
 }
 
 static int
@@ -547,5 +547,5 @@ pcap_write_tcp_segment (
         }
     }
 
-    return pdu_len;
+    return (int) pdu_len;
 }
