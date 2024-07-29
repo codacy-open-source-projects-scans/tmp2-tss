@@ -24,10 +24,16 @@
 #include "util/tpm2b.h"                   // for TPM2B
 #ifdef TCTI_MSSIM
 #include "tss2_tcti_mssim.h"              // for tcti_platform_command, MS_S...
+#include "tss2-tcti/tcti-mssim.h"         // for TCTI_MSSIM_MAGIC
 #endif /* TCTI_MSSIM */
 #ifdef TCTI_SWTPM
 #include "tss2_tcti_swtpm.h"              // for Tss2_Tcti_Swtpm_Reset
+#include "tss2-tcti/tcti-swtpm.h"         // for TCTI_SWTPM_MAGIC
 #endif /* TCTI_SWTPM */
+#ifdef TCTI_LIBTPMS
+#include "tss2_tcti_libtpms.h"              // for Tss2_Tcti_Libtpms_Reset
+#include "tss2-tcti/tcti-libtpms.h"         // for TCTI_LIBTPMS_MAGIC
+#endif /* TCTI_LIBTPMS */
 
 #include "../integration/session-util.h"  // for SESSION, create_auth_session
 #include "../integration/sys-util.h"      // for CopySizedByteBuffer, Define...
@@ -35,7 +41,7 @@
 #include "sysapi_util.h"                  // for _TSS2_SYS_CONTEXT_BLOB, res...
 #include "util/tss2_endian.h"             // for BE_TO_HOST_32
 
-#define LOGMODULE testtpmclient
+#define LOGMODULE test
 #include "util/log.h"                     // for LOG_INFO, LOG_ERROR, LOGBLO...
 
 /*
@@ -170,46 +176,57 @@ static TSS2_RC TpmReset()
     while (magic == 0 || magic == TCTILDR_MAGIC || magic == TCTI_PCAP_MAGIC) {
         magic = *((uint64_t*) tcti);
         if (magic == TCTILDR_MAGIC) {
+            LOG_TRACE("TCTI is tctildr (0x%" PRIx64 "). Unwrapping...", magic);
             tcti = ((TSS2_TCTILDR_CONTEXT *) tcti)->tcti;
         } else if (magic == TCTI_PCAP_MAGIC) {
+            LOG_TRACE("TCTI is tcti-pcap (0x%" PRIx64 "). Unwrapping...", magic);
             tcti = ((TSS2_TCTI_PCAP_CONTEXT *) tcti)->tcti_child;
         }
     }
 
-#ifdef TCTI_LIBTPMS
-    rval = Tss2_Tcti_Libtpms_Reset(tcti);
+    switch (magic) {
 
-    /* If TCTI is not libtpms, bad context is returned. */
-    if (rval != TSS2_TCTI_RC_BAD_CONTEXT) {
-        return rval;
-    } else {
-        LOG_WARNING("TPM Reset failed: wrong TCTI type retrying with swtpm...");
-    }
+#ifdef TCTI_LIBTPMS
+        case TCTI_LIBTPMS_MAGIC:
+            LOG_DEBUG("Calling Tss2_Tcti_Libtpms_Reset()");
+            rval = Tss2_Tcti_Libtpms_Reset(tcti);
+            break;
 #endif /* TCTI_LIBTPMS */
 
 #ifdef TCTI_SWTPM
-    rval = Tss2_Tcti_Swtpm_Reset(tcti);
-
-    /* If TCTI is not swtpm, bad context is returned. */
-    if (rval != TSS2_TCTI_RC_BAD_CONTEXT) {
-        return rval;
-    } else {
-        LOG_WARNING("TPM Reset failed: wrong TCTI type retrying with mssim...");
-    }
+        case TCTI_SWTPM_MAGIC:
+            LOG_DEBUG("Calling Tss2_Tcti_Swtpm_Reset()");
+            rval = Tss2_Tcti_Swtpm_Reset(tcti);
+            break;
 #endif /* TCTI_SWTPM */
 
 #ifdef TCTI_MSSIM
-    rval = (TSS2_RC)tcti_platform_command( tcti, MS_SIM_POWER_OFF );
-    if (rval == TSS2_RC_SUCCESS) {
-        rval = (TSS2_RC)tcti_platform_command( tcti, MS_SIM_POWER_ON );
-    } else {
-        LOG_WARNING("TPM Reset failed: mssim returned 0x%x.", rval);
-    }
+        case TCTI_MSSIM_MAGIC:
+            LOG_DEBUG("Calling tcti_platform_command()");
+            rval = (TSS2_RC)tcti_platform_command( tcti, MS_SIM_POWER_OFF );
+            if (rval == TSS2_RC_SUCCESS) {
+                rval = (TSS2_RC)tcti_platform_command( tcti, MS_SIM_POWER_ON );
+            }
+            break;
 #endif /* TCTI_MSSIM */
 
-    if (rval == TSS2_TCTI_RC_BAD_CONTEXT) {
-        LOG_WARNING("TPM Reset failed: could not reset using known TCTI types. TCTI magic: %" PRIx64, *((uint64_t *) tcti));
-        rval = EXIT_SKIP;
+        default:
+            LOG_WARNING("TPM reset failed. TCTI unknown. Got TCTI magic: 0x%" PRIx64 ". Enabled TCTIs with reset support: "
+#ifdef TCTI_LIBTPMS
+                        "libtpms (" xstr(TCTI_LIBTPMS_MAGIC) "), "
+#endif /* TCTI_LIBTPMS */
+#ifdef TCTI_SWTPM
+                        "swtpm (" xstr(TCTI_SWTPM_MAGIC) "), "
+#endif /* TCTI_SWTPM */
+#ifdef TCTI_MSSIM
+                        "mssim (" xstr(TCTI_MSSIM_MAGIC) "), "
+#endif /* TCTI_MSSIM */
+                        "", magic);
+            return EXIT_SKIP;
+    }
+
+    if (rval != TSS2_RC_SUCCESS) {
+        LOG_WARNING("TPM reset failed: 0x%08x", rval);
     }
 
     return rval;
@@ -609,7 +626,7 @@ static void TestHierarchyChangeAuth()
 #define PCR_16  16
 #define PCR_17  17
 #define PCR_18  18
-#define PCR_SIZE 20
+#define PCR_SIZE 32
 
 static void TestPcrExtend()
 {
@@ -623,7 +640,7 @@ static void TestPcrExtend()
     TPML_DIGEST pcrValues;
     TPML_DIGEST_VALUES digests;
     TPML_PCR_SELECTION pcrSelectionOut;
-    UINT8 pcrAfterExtend[20];
+    UINT8 pcrAfterExtend[PCR_SIZE];
     TSS2_TCTI_CONTEXT *tctiContext;
 
     TSS2L_SYS_AUTH_COMMAND sessionsData = { .count = 1, .auths = {{
@@ -636,7 +653,7 @@ static void TestPcrExtend()
 
     /* Init digests */
     digests.count = 1;
-    digests.digests[0].hashAlg = TPM2_ALG_SHA1;
+    digests.digests[0].hashAlg = TPM2_ALG_SHA256;
     digestSize = GetDigestSize( digests.digests[0].hashAlg );
 
     for( i = 0; i < digestSize; i++ )
@@ -645,7 +662,7 @@ static void TestPcrExtend()
     }
 
     pcrSelection.count = 1;
-    pcrSelection.pcrSelections[0].hash = TPM2_ALG_SHA1;
+    pcrSelection.pcrSelections[0].hash = TPM2_ALG_SHA256;
     pcrSelection.pcrSelections[0].sizeofSelect = 3;
 
     /* Clear out PCR select bit field */
@@ -684,7 +701,7 @@ static void TestPcrExtend()
         Cleanup();
     }
 
-    if( 0 == memcmp( &( pcrBeforeExtend[0] ), &( pcrAfterExtend[0] ), 20 ) )
+    if( 0 == memcmp( &( pcrBeforeExtend[0] ), &( pcrAfterExtend[0] ), PCR_SIZE ) )
     {
         LOG_ERROR("ERROR!! PCR didn't change value" );
         Cleanup();
@@ -757,7 +774,7 @@ static void TestNV()
 
     publicInfo.size = 0;
     publicInfo.nvPublic.nvIndex = TPM20_INDEX_TEST1;
-    publicInfo.nvPublic.nameAlg = TPM2_ALG_SHA1;
+    publicInfo.nvPublic.nameAlg = TPM2_ALG_SHA256;
 
     /* First zero out attributes. */
     *(UINT32 *)&( publicInfo.nvPublic.attributes ) = 0;
@@ -895,7 +912,7 @@ static void TestHierarchyControl()
 
     publicInfo.size = 0;
     publicInfo.nvPublic.nvIndex = TPM20_INDEX_TEST1;
-    publicInfo.nvPublic.nameAlg = TPM2_ALG_SHA1;
+    publicInfo.nvPublic.nameAlg = TPM2_ALG_SHA256;
 
     /* First zero out attributes. */
     *(UINT32 *)&( publicInfo.nvPublic.attributes ) = 0;
@@ -1158,7 +1175,7 @@ static TSS2_RC CreateDataBlob( TSS2_SYS_CONTEXT *sysContext, SESSION **policySes
 
     inPublic.size = 0;
     inPublic.publicArea.type = TPM2_ALG_RSA;
-    inPublic.publicArea.nameAlg = TPM2_ALG_SHA1;
+    inPublic.publicArea.nameAlg = TPM2_ALG_SHA256;
     *(UINT32 *)&( inPublic.publicArea.objectAttributes) = 0;
     inPublic.publicArea.objectAttributes |= TPMA_OBJECT_RESTRICTED;
     inPublic.publicArea.objectAttributes |= TPMA_OBJECT_USERWITHAUTH;
@@ -1169,7 +1186,7 @@ static TSS2_RC CreateDataBlob( TSS2_SYS_CONTEXT *sysContext, SESSION **policySes
     inPublic.publicArea.authPolicy.size = 0;
     inPublic.publicArea.parameters.rsaDetail.symmetric.algorithm = TPM2_ALG_AES;
     inPublic.publicArea.parameters.rsaDetail.symmetric.keyBits.aes = 128;
-    inPublic.publicArea.parameters.rsaDetail.symmetric.mode.aes = TPM2_ALG_CBC;
+    inPublic.publicArea.parameters.rsaDetail.symmetric.mode.aes = TPM2_ALG_CFB;
     inPublic.publicArea.parameters.rsaDetail.scheme.scheme = TPM2_ALG_NULL;
     inPublic.publicArea.parameters.rsaDetail.keyBits = 2048;
     inPublic.publicArea.parameters.rsaDetail.exponent = 0;
@@ -1427,15 +1444,17 @@ static void TestHash()
           0xde, 0xad, 0xbe, 0xef };
 
     UINT8 goodHashValue[] =
-            { 0xB3, 0xFD, 0x6A, 0xD2, 0x9F, 0xD0, 0x13, 0x52, 0xBA, 0xFC,
-              0x8B, 0x22, 0xC9, 0x6D, 0x88, 0x42, 0xA3, 0x3C, 0xB0, 0xC9 };
+            { 0x4d, 0xb2, 0x5f, 0xa7, 0x94, 0xbc, 0x58, 0xa2, 0x43, 0x57,
+             0xf8, 0xdc, 0x98, 0x98, 0x0c, 0xc5, 0x44, 0xe4, 0x51, 0xbf,
+             0xb0, 0xd1, 0xab, 0x7a, 0x65, 0x14, 0xbd, 0xa7, 0x55, 0x9f,
+             0x02, 0x2f };
 
     LOG_INFO("HASH TESTS:" );
 
     auth.size = 2;
     auth.buffer[0] = 0;
     auth.buffer[1] = 0xff;
-    rval = Tss2_Sys_HashSequenceStart ( sysContext, 0, &auth, TPM2_ALG_SHA1, &sequenceHandle[0], 0 );
+    rval = Tss2_Sys_HashSequenceStart ( sysContext, 0, &auth, TPM2_ALG_SHA256, &sequenceHandle[0], 0 );
     CheckPassed( rval );
 
     sessionsData.auths[0].sessionHandle = TPM2_RH_PW;
@@ -1619,7 +1638,7 @@ static void TestUnseal()
     creationPCR.count = 0;
 
     inPublic.publicArea.type = TPM2_ALG_KEYEDHASH;
-    inPublic.publicArea.nameAlg = TPM2_ALG_SHA1;
+    inPublic.publicArea.nameAlg = TPM2_ALG_SHA256;
 
     *(UINT32 *)&( inPublic.publicArea.objectAttributes) = 0;
     inPublic.publicArea.objectAttributes |= TPMA_OBJECT_USERWITHAUTH;
@@ -1694,7 +1713,7 @@ static void CreatePasswordTestNV( TPMI_RH_NV_INDEX nvIndex, char * password )
 
     publicInfo.size = 0;
     publicInfo.nvPublic.nvIndex = nvIndex;
-    publicInfo.nvPublic.nameAlg = TPM2_ALG_SHA1;
+    publicInfo.nvPublic.nameAlg = TPM2_ALG_SHA256;
 
     /* First zero out attributes. */
     *(UINT32 *)&( publicInfo.nvPublic.attributes ) = 0;
@@ -2068,7 +2087,7 @@ static void GetSetEncryptParamTests()
     nvAttributes |= TPMA_NV_PLATFORMCREATE;
 
     rval = DefineNvIndex( sysContext, TPM2_RH_PLATFORM, &nvAuth, &authPolicy,
-            TPM20_INDEX_PASSWORD_TEST, TPM2_ALG_SHA1, nvAttributes, 32  );
+            TPM20_INDEX_PASSWORD_TEST, TPM2_ALG_SHA256, nvAttributes, 32  );
     CheckPassed( rval ); /* #4 */
 
     /* Write the index. */
@@ -2202,6 +2221,9 @@ static void EcEphemeralTest()
 
     Q.size = 0;
     rval = Tss2_Sys_EC_Ephemeral( sysContext, 0, TPM2_ECC_BN_P256, &Q, &counter, 0 );
+    if (rval == TPM2_RC_COMMAND_CODE) {
+        return;
+    }
     CheckPassed( rval );
 }
 

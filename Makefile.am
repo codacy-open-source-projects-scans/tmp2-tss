@@ -204,7 +204,8 @@ include Makefile-fuzz.am
 
 ### Distribution files ###
 # Add udev rule
-udevrules_DATA   = dist/tpm-udev.rules
+udevrules_DATA   = dist/tpm-udev.rules \
+                   dist/ltt2go-udev.rules
 
 # Adding user and developer information
 EXTRA_DIST += \
@@ -782,6 +783,7 @@ EXTRA_DIST +=  \
     test/data/fapi/policy/pol_cphash.json \
     test/data/fapi/policy/pol_or_read_write_secret.json \
     test/data/fapi/policy/pol_ek_high_range_sha256.json \
+    test/data/fapi/policy/pol_ek_high_range_sha384.json \
     test/data/fapi/P_ECC_sh_eh_policy_sha384.json \
     test/data/fapi/policy/pol_authorize_ecc_pem_sha384.json \
     test/data/fapi/policy/pol_authorize_nv_complex_tpm2b_sha384.json \
@@ -976,7 +978,8 @@ install-man: install-man3 install-man7
 	$(LN_S) -f Tss2_TctiLdr_Initialize.3 $(DESTDIR)$(man3dir)/Tss2_TctiLdr_Initialize_Ex.3
 endif #FAPI
 
-EXTRA_DIST += dist/tpm-udev.rules
+EXTRA_DIST += dist/tpm-udev.rules \
+              dist/ltt2go-udev.rules
 
 install-dirs:
 if HOSTOS_LINUX
@@ -1003,10 +1006,12 @@ endif
 install-data-hook: install-dirs
 	-if [ ! -z "$(udevrulesprefix)" ]; then \
 		mv $(DESTDIR)$(udevrulesdir)/tpm-udev.rules $(DESTDIR)$(udevrulesdir)/$(udevrulesprefix)tpm-udev.rules; \
+		mv $(DESTDIR)$(udevrulesdir)/ltt2go-udev.rules $(DESTDIR)$(udevrulesdir)/$(udevrulesprefix)ltt2go-udev.rules; \
 	fi
 
 uninstall-local:
 	-rm $(DESTDIR)$(udevrulesdir)/$(udevrulesprefix)tpm-udev.rules
+	-rm $(DESTDIR)$(udevrulesdir)/$(udevrulesprefix)ltt2go-udev.rules
 	cd $(DESTDIR)$(man3dir) && \
 		[ -L Tss2_TctiLdr_Initialize_Ex.3 ] && \
 			rm -f Tss2_TctiLdr_Initialize_Ex.3 || true
