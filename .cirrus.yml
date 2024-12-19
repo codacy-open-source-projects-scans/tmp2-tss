@@ -2,11 +2,10 @@ task:
   env:
     CFLAGS: "-I/usr/local/include -I/usr/local/openssl/include"
     LDFLAGS: -L/usr/local/lib
-    ibmtpm_name: ibmtpm1637
     libusb_version: v1.0.26
   freebsd_instance:
     matrix:
-      image_family: freebsd-14-0
+      image_family: freebsd-14-1
   install_script:
     - IGNORE_OSVERSION=yes
     - pkg update -f
