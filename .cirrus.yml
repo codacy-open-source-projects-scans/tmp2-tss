@@ -1,3 +1,9 @@
+# SPDX-FileCopyrightText: 2020 - 2021 Intel
+# SPDX-FileCopyrightText: 2020 - 2021 Fraunhofer SIT sponsored by Infineon
+# SPDX-FileCopyrightText: 2021 - 2022 Infineon Technologies AG
+# SPDX-FileCopyrightText: 2023 - 2024 Juergen Repp
+# SPDX-License-Identifier: BSD-2-Clause
+
 task:
   env:
     CFLAGS: "-I/usr/local/include -I/usr/local/openssl/include"
@@ -5,7 +11,7 @@ task:
     libusb_version: v1.0.26
   freebsd_instance:
     matrix:
-      image_family: freebsd-14-1
+      image_family: freebsd-14-3
   install_script:
     - IGNORE_OSVERSION=yes
     - pkg update -f
@@ -23,4 +29,4 @@ task:
     #
     ./bootstrap &&
     ./configure --enable-self-generated-certificate --enable-unit=yes --enable-integration=yes --with-crypto=ossl --disable-doxygen-doc --enable-tcti-swtpm=yes --enable-tcti-libtpms=no --enable-tcti-mssim=no --disable-dependency-tracking &&
-    gmake -j check || { cat /tmp/cirrus-ci-build/tpm2-tss-*/_build/sub/test-suite.log; exit 1; }
+    gmake -j check || { cat /tmp/cirrus-ci-build/test-suite.log; exit 1; }

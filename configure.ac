@@ -15,7 +15,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])]) #Backward compatible setti
 
 AC_CONFIG_HEADERS([config.h])
 
-AC_CONFIG_FILES([Makefile Doxyfile lib/tss2-sys.pc lib/tss2-esys.pc lib/tss2-mu.pc lib/tss2-tcti-device.pc lib/tss2-tcti-mssim.pc lib/tss2-tcti-swtpm.pc lib/tss2-tcti-pcap.pc lib/tss2-tcti-libtpms.pc lib/tss2-rc.pc lib/tss2-tctildr.pc lib/tss2-fapi.pc lib/tss2-tcti-cmd.pc lib/tss2-policy.pc lib/tss2-tcti-spi-helper.pc lib/tss2-tcti-spi-ltt2go.pc lib/tss2-tcti-spidev.pc lib/tss2-tcti-spi-ftdi.pc lib/tss2-tcti-i2c-helper.pc lib/tss2-tcti-i2c-ftdi.pc])
+AC_CONFIG_FILES([Makefile Doxyfile lib/tss2-sys.pc lib/tss2-esys.pc lib/tss2-mu.pc lib/tss2-tcti-device.pc lib/tss2-tcti-mssim.pc lib/tss2-tcti-swtpm.pc lib/tss2-tcti-pcap.pc lib/tss2-tcti-null.pc lib/tss2-tcti-libtpms.pc lib/tss2-rc.pc lib/tss2-tctildr.pc lib/tss2-fapi.pc lib/tss2-tcti-cmd.pc lib/tss2-policy.pc lib/tss2-tcti-spi-helper.pc lib/tss2-tcti-spi-ltt2go.pc lib/tss2-tcti-spidev.pc lib/tss2-tcti-spi-ftdi.pc lib/tss2-tcti-i2c-helper.pc lib/tss2-tcti-i2c-ftdi.pc])
 
 # propagate configure arguments to distcheck
 AC_SUBST([DISTCHECK_CONFIGURE_FLAGS],[$ac_configure_args])
@@ -100,14 +100,14 @@ AC_SUBST(userstatedir, $with_userstatedir)
 
 AC_ARG_WITH([sysusersdir],
             [AS_HELP_STRING([--with-sysusersdir=<dir>],
-                            [sets the sysusers.d directory (default is "${sysconfdir}/sysusers.d")])],,
-            [with_sysusersdir="${sysconfdir}/sysusers.d"])
+                            [sets the sysusers.d directory (default is "${libdir}/sysusers.d")])],,
+            [with_sysusersdir="${libdir}/sysusers.d"])
 AC_SUBST(sysusersdir, $with_sysusersdir)
 
 AC_ARG_WITH([tmpfilesdir],
             [AS_HELP_STRING([--with-tmpfilesdir=<dir>],
-                            [sets the tmpfiles.d directory (default is "${sysconfdir}/tmpfiles.d")])],,
-            [with_tmpfilesdir="${sysconfdir}/tmpfiles.d"])
+                            [sets the tmpfiles.d directory (default is "${libdir}/tmpfiles.d")])],,
+            [with_tmpfilesdir="${libdir}/tmpfiles.d"])
 AC_SUBST(tmpfilesdir, $with_tmpfilesdir)
 
 AC_ARG_ENABLE([unit],
@@ -277,6 +277,12 @@ AC_ARG_ENABLE([tcti-pcap],
                             [don't build the tcti-pcap module])],,
             [enable_tcti_pcap=yes])
 AM_CONDITIONAL([ENABLE_TCTI_PCAP], [test "x$enable_tcti_pcap" != xno])
+
+AC_ARG_ENABLE([tcti-null],
+            [AS_HELP_STRING([--disable-tcti-null],
+                            [don't build the tcti-null module])],,
+            [enable_tcti_null=yes])
+AM_CONDITIONAL([ENABLE_TCTI_NULL], [test "x$enable_tcti_null" != xno])
 
 AC_ARG_ENABLE([tcti-libtpms],
             [AS_HELP_STRING([--disable-tcti-libtpms],
@@ -672,9 +678,9 @@ AS_IF([test "$HOSTOS" = "Linux" && test "x$systemd_sysusers" != "xyes"],
       AC_CHECK_PROG(adduser, adduser, yes)
       AC_CHECK_PROG(addgroup, addgroup, yes)
       AS_IF([test "x$addgroup" != "xyes" && test "x$groupadd" != "xyes" ],
-         [AC_MSG_ERROR([addgroup or groupadd are needed.])])
+         [AC_MSG_WARN([addgroup or groupadd are needed for install.])])
       AS_IF([test "x$adduser" != "xyes" && test "x$useradd" != "xyes" ],
-         [AC_MSG_ERROR([adduser or useradd are needed.])])])
+         [AC_MSG_WARN([adduser or useradd are needed for install.])])])
 
 AC_SUBST([PATH])
 

@@ -5,6 +5,14 @@ notably is the indentation (more on this later). Above all else we ask
 that when modifying the code that you follow the most important rule:
 check the surrounding code and imitate its style [1].
 
+## Clang-Format Style
+For simplicity, we use clang-format for all files (also as part of the CI).
+Thus before commiting any code, we recommend you run
+```sh
+docker run -u $UID -v $PWD:$PWD ghcr.io/tpm2-software/ubuntu-24.04 clang-format -i $(find -name '*.h' -or -name '*.c' | xargs realpath)
+```
+This ensures that the code will not break during your pull request.
+
 ## C Standard and Compiler Stuff
 Code should hold as close to the C99 standard as possible with the exception
 that GCC specific extensions are generally accepted. The code must compile
@@ -294,8 +302,20 @@ find src -iname '*.h' | xargs -n1 -P$(nproc) include-what-you-use -Xiwyu --mappi
 # Make sure that iwyu did not break anything
 make -j check
 ```
+## Licenses
+
+All files shall contain `SPDX-FileCopyrightText` and `SPDX-License-Identifier`
+information in their header.
+For files that cannot contain them (e.g. Markdown would render it and
+.def and .map files should not have them), the corresponding entry shall
+be included in the .reuse/dep5 file.
+There will be a CI job to check `reuse lint` on this project.
 
 ## References
 1. GNOME C Coding Style : https://developer.gnome.org/programming-guidelines/stable/c-coding-style.html.en
 2. Alan Bridger, Mick Brooks, and Jim Pisano, C Coding Standards, 2001, http://www.alma.nrao.edu/development/computing/docs/joint/0009/2001-02-28.pdf
 3. Brian Kernighan, Dennis Ritchie, The C Programing Language, 1988
+# License
+
+This work is licensed under the
+[Creative Commons Attribution 4.0 International License (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).

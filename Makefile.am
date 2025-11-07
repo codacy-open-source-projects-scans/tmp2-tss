@@ -7,7 +7,6 @@
 
 ### Initialize global variables used throughout the file ###
 INCLUDE_DIRS    = -I$(srcdir)/src -I$(srcdir)/include/tss2
-ACLOCAL_AMFLAGS = -I m4 --install
 AM_CFLAGS       = $(INCLUDE_DIRS) $(EXTRA_CFLAGS) $(CODE_COVERAGE_CFLAGS) \
 				  $(SANITIZER_CFLAGS)
 AM_LDFLAGS      = $(EXTRA_LDFLAGS) $(CODE_COVERAGE_LIBS) $(SANITIZER_LDFLAGS)
@@ -304,7 +303,7 @@ src_tss2_tcti_libtss2_tctildr_la_SOURCES = \
     src/tss2-tcti/tctildr.c src/tss2-tcti/tctildr.h \
     src/tss2-tcti/tctildr-interface.h
 if NO_DL
-src_tss2_tcti_libtss2_tctildr_la_LIBADD += $(libtss2_tcti_device) $(libtss2_tcti_mssim)
+src_tss2_tcti_libtss2_tctildr_la_LIBADD += $(libtss2_tcti_device) $(libtss2_tcti_mssim) $(libtss2_tcti_swtpm)
 src_tss2_tcti_libtss2_tctildr_la_SOURCES += src/tss2-tcti/tctildr-nodl.c src/tss2-tcti/tctildr-nodl.h
 else
 src_tss2_tcti_libtss2_tctildr_la_LIBADD += $(LIBADD_DL)
@@ -382,6 +381,25 @@ src_tss2_tcti_libtss2_tcti_pcap_la_SOURCES  = \
     src/tss2-tcti/tcti-pcap.c
 endif # ENABLE_TCTI_PCAP
 EXTRA_DIST += lib/tss2-tcti-pcap.map
+
+# tcti null library
+if ENABLE_TCTI_NULL
+libtss2_tcti_null = src/tss2-tcti/libtss2-tcti-null.la
+tss2_HEADERS += $(srcdir)/include/tss2/tss2_tcti_null.h
+lib_LTLIBRARIES += $(libtss2_tcti_null)
+pkgconfig_DATA += lib/tss2-tcti-null.pc
+
+if HAVE_LD_VERSION_SCRIPT
+src_tss2_tcti_libtss2_tcti_null_la_LDFLAGS  = -Wl,--version-script=$(srcdir)/lib/tss2-tcti-null.map
+endif # HAVE_LD_VERSION_SCRIPT
+src_tss2_tcti_libtss2_tcti_null_la_LIBADD   = $(libtss2_tctildr) $(libtss2_mu) $(libutil) $(libutilio)
+src_tss2_tcti_libtss2_tcti_null_la_SOURCES  = \
+    src/tss2-tcti/tcti-common.c \
+    src/tss2-tcti/tcti-null.c \
+    src/tss2-tcti/tcti-null.h
+endif # ENABLE_TCTI_NULL
+EXTRA_DIST += lib/tss2-tcti-null.map
+
 
 # tcti libtpms library
 if ENABLE_TCTI_LIBTPMS
@@ -625,7 +643,8 @@ libtss2_rc = src/tss2-rc/libtss2-rc.la
 tss2_HEADERS += $(srcdir)/include/tss2/tss2_rc.h
 lib_LTLIBRARIES += $(libtss2_rc)
 pkgconfig_DATA += lib/tss2-rc.pc
-EXTRA_DIST += lib/tss2-rc.map lib/tss2-rc.def
+EXTRA_DIST += lib/tss2-rc.map lib/tss2-rc.def \
+              src/tss2-rc/tss2-rc.vcxproj
 
 if HAVE_LD_VERSION_SCRIPT
 src_tss2_rc_libtss2_rc_la_LDFLAGS = -Wl,--version-script=$(srcdir)/lib/tss2-rc.map
@@ -715,7 +734,13 @@ fapiprofilesdir = @sysconfdir@/tpm2-tss/fapi-profiles
 fapiprofiles_DATA = dist/fapi-profiles/P_RSA2048SHA256.json \
                     dist/fapi-profiles/P_ECCP256SHA256.json \
                     dist/fapi-profiles/P_RSA3072SHA384.json \
-                    dist/fapi-profiles/P_ECCP384SHA384.json
+                    dist/fapi-profiles/P_ECCP384SHA384.json \
+                    dist/fapi-profiles/P_RSA2048SHA256-legacy.json \
+                    dist/fapi-profiles/P_ECCP256SHA256-legacy.json \
+                    dist/fapi-profiles/P_RSA2048SHA256-high-range.json \
+                    dist/fapi-profiles/P_ECCP256SHA256-high-range.json \
+                    dist/fapi-profiles/P_RSA2048SHA256-low-range.json \
+                    dist/fapi-profiles/P_ECCP256SHA256-low-range.json
 
 libtss2_fapi = src/tss2-fapi/libtss2-fapi.la
 tss2_HEADERS += $(srcdir)/include/tss2/tss2_fapi.h
@@ -727,6 +752,12 @@ EXTRA_DIST +=  \
     dist/fapi-profiles/P_ECCP256SHA256.json \
     dist/fapi-profiles/P_RSA3072SHA384.json \
     dist/fapi-profiles/P_ECCP384SHA384.json \
+    dist/fapi-profiles/P_RSA2048SHA256-legacy.json \
+    dist/fapi-profiles/P_ECCP256SHA256-legacy.json \
+    dist/fapi-profiles/P_RSA2048SHA256-high-range.json \
+    dist/fapi-profiles/P_ECCP256SHA256-high-range.json \
+    dist/fapi-profiles/P_RSA2048SHA256-low-range.json \
+    dist/fapi-profiles/P_ECCP256SHA256-low-range.json \
     dist/sysusers.d/tpm2-tss.conf \
     dist/tmpfiles.d/tpm2-tss-fapi.conf.in \
     doc/fapi-config.md \
@@ -747,6 +778,10 @@ EXTRA_DIST +=  \
     test/data/fapi/P_ECC.json \
     test/data/fapi/P_ECC384.json \
     test/data/fapi/P_ECC_system.json \
+    test/data/fapi/P_ECC384_no_unique_init.json \
+    test/data/fapi/P_ECC_no_unique_init.json \
+    test/data/fapi/P_RSA3072_no_unique_init.json \
+    test/data/fapi/P_RSA_no_unique_init.json \
     test/data/fapi/policy/pol_pcr16_0.json \
     test/data/fapi/policy/pol_pcr16_0_rsa_authorized.json \
     test/data/fapi/policy/pol_pcr16_0_ecc_authorized.json \

@@ -49,6 +49,11 @@ tpm2_startup -Tspi-ftdi -c
 tpm2_getrandom -Tspi-ftdi 8 --hex
 ```
 
+You can specify the FTDI interface by providing an additional child argument, otherwise it defaults to A:
+```console
+tpm2_startup -Tspi-ftdi:B -c
+```
+
 Enable abrmd:
 ```console
 export DBUS_SESSION_BUS_ADDRESS=`dbus-daemon --session --print-address --fork`
@@ -58,3 +63,7 @@ export TPM2TOOLS_TCTI="tabrmd:bus_name=com.intel.tss2.Tabrmd,bus_type=session"
 tpm2_startup -c
 tpm2_getrandom 8 --hex
 ```
+# License
+
+This work is licensed under the
+[Creative Commons Attribution 4.0 International License (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).

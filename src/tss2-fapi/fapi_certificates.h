@@ -6,7 +6,7 @@
 #ifndef FAPI_CERTIFICATES_H
 #define FAPI_CERTIFICATES_H
 
-static char * root_cert_list[] = {
+static char *root_cert_list[] = {
     /* NTZ root certificate */
     "-----BEGIN CERTIFICATE-----\n"
     "MIICRDCCAcqgAwIBAgIBATAKBggqhkjOPQQDAzBrMQswCQYDVQQGEwJDTjEhMB8G\n"
@@ -435,7 +435,7 @@ static char * root_cert_list[] = {
     "2N/xZkcohRZIAiBDufnmhZWCbX4pibbzAOgcxjsc5+qmpAovxW9ipWJEsA==\n"
     "-----END CERTIFICATE-----\n",
 
-     /* Nuvoton TPM Root CA 1210 */
+    /* Nuvoton TPM Root CA 1210 */
     "-----BEGIN CERTIFICATE-----\n"
     "MIICHTCCAaOgAwIBAgIBATAKBggqhkjOPQQDAzBVMR0wGwYDVQQDExROdXZvdG9u\n"
     "VFBNUm9vdENBMTIxMDEnMCUGA1UEChMeTnV2b3RvbiBUZWNobm9sb2d5IENvcnBv\n"
@@ -529,7 +529,7 @@ static char * root_cert_list[] = {
     "6I5w6hPTLigCIQDLLFlXK1xw1a1D1/idVhdd3a8gkE0FnTJO890WwiQbpg==\n"
     "-----END CERTIFICATE-----",
 
-     /* Nuvoton TPM Root CA 2112 */
+    /* Nuvoton TPM Root CA 2112 */
     "-----BEGIN CERTIFICATE-----\n"
     "MIICBjCCAa2gAwIBAgIJAOmPfeHxqsTXMAoGCCqGSM49BAMCMFUxUzAfBgNVBAMT\n"
     "GE51dm90b24gVFBNIFJvb3QgQ0EgMjExMjAlBgNVBAoTHk51dm90b24gVGVjaG5v\n"
@@ -592,6 +592,25 @@ static char * root_cert_list[] = {
     "7r+i6q84W2nJdd+BoQQv4sk5GeuN2j2u4k1a8DkRPsVPc2I9QTtbzekchTK1GCXW\n"
     "ki3DKGkZUEuaoaa60Kgw55Q5rt1eK7HKEG5npmR8aEod7BDLWy4CMTNAWR5iabCW\n"
     "/KX28JbJL6Phau9j\n"
+    "-----END CERTIFICATE-----\n",
+
+    /* Intel ODCA Root Certificate */
+    "-----BEGIN CERTIFICATE-----\n"
+    "MIICujCCAj6gAwIBAgIUPLLiHTrwySRtWxR4lxKLlu7MJ7wwDAYIKoZIzj0EAwMF\n"
+    "ADCBiTELMAkGA1UEBgwCVVMxCzAJBgNVBAgMAkNBMRQwEgYDVQQHDAtTYW50YSBD\n"
+    "bGFyYTEaMBgGA1UECgwRSW50ZWwgQ29ycG9yYXRpb24xIzAhBgNVBAsMGk9uRGll\n"
+    "IENBIFJvb3QgQ2VydCBTaWduaW5nMRYwFAYDVQQDDA13d3cuaW50ZWwuY29tMB4X\n"
+    "DTE5MDQwMzAwMDAwMFoXDTQ5MTIzMTIzNTk1OVowgYkxCzAJBgNVBAYMAlVTMQsw\n"
+    "CQYDVQQIDAJDQTEUMBIGA1UEBwwLU2FudGEgQ2xhcmExGjAYBgNVBAoMEUludGVs\n"
+    "IENvcnBvcmF0aW9uMSMwIQYDVQQLDBpPbkRpZSBDQSBSb290IENlcnQgU2lnbmlu\n"
+    "ZzEWMBQGA1UEAwwNd3d3LmludGVsLmNvbTB2MBAGByqGSM49AgEGBSuBBAAiA2IA\n"
+    "BK8SfB2UflvXZqb5Kc3+lokrABHWazvNER2axPURP64HILkXChPB0OEX5hLB7Okw\n"
+    "7Dy6oFqB5tQVDupgfvUX/SgYBEaDdG5rCVFrGAis6HX5TA2ewQmj14r2ncHBgnpp\n"
+    "B6NjMGEwHwYDVR0jBBgwFoAUtFjJ9uQIQKPyWMg5eG6ujgqNnDgwDwYDVR0TAQH/\n"
+    "BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAQYwHQYDVR0OBBYEFLRYyfbkCECj8ljIOXhu\n"
+    "ro4KjZw4MAwGCCqGSM49BAMDBQADaAAwZQIxAP9B4lFF86uvpHmkcp61cWaU565a\n"
+    "yE3p7ezu9haLE/lPLh5hFQfmTi1nm/sG3JEXMQIwNpKfHoDmUTrUyezhhfv3GG+1\n"
+    "CqBXstmCYH40buj9jKW3pHWc71s9arEmPWli7I8U\n"
     "-----END CERTIFICATE-----\n"
 
 };
