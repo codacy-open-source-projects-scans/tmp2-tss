@@ -388,11 +388,11 @@ ifapi_hierarchy_path_p(const char *path) {
     if (strncmp("P_", &path[pos1], 2) == 0) {
         start = strchr(&path[pos1], IFAPI_FILE_DELIM_CHAR);
         if (start) {
-            pos2 = (int)(start - &path[pos1]);
-            if (strncmp("/", &path[pos1 + pos2], 1) == 0)
-                pos2 += 1;
-            if (strncmp("/", &path[pos1 + pos2], 1) == 0)
-                pos2 += 1;
+            pos2 = (size_t)(start - &path[pos1]);
+            if (path[pos1 + pos2] == IFAPI_FILE_DELIM_CHAR)
+                pos2++;
+            if (path[pos1 + pos2] == IFAPI_FILE_DELIM_CHAR)
+                pos2++;
         }
     }
     /* Check whether only hierarchy is specified in path */
@@ -1348,6 +1348,10 @@ copy_policy_element(const TPMT_POLICYELEMENT *from_policy, TPMT_POLICYELEMENT *t
                      from_policy->element.PolicySigned.publicKeyHint, r, error);
         break;
     case POLICYPCR:
+        if (from_policy->element.PolicyPCR.pcrs == NULL) {
+            goto_error(r, TSS2_FAPI_RC_BAD_REFERENCE, "Bad reference (NULL) to PCRs in policy",
+                       error);
+        }
         to_policy->element.PolicyPCR.pcrs
             = calloc(1, sizeof(TPML_PCRVALUES)
                             + from_policy->element.PolicyPCR.pcrs->count * sizeof(TPMS_PCRVALUE));
@@ -2434,6 +2438,9 @@ ifapi_compute_policy_digest(TPML_PCRVALUES     *pcrs,
             pcr_selection->pcrSelections[j].sizeofSelect = 3;
         }
         UINT32 pcrIndex = pcrs->pcrs[i].pcr;
+        if (pcrIndex >= TPM2_MAX_PCRS) {
+            goto_error(r, TSS2_FAPI_RC_BAD_VALUE, "Invalid PCR index %" PRIu32, cleanup, pcrIndex);
+        }
         if (pcrIndex + 1 > max_pcr)
             max_pcr = pcrIndex + 1;
         pcr_selection->pcrSelections[j].pcrSelect[pcrIndex / 8] |= ((BYTE)1) << pcrIndex % 8;

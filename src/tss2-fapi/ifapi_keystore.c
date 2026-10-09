@@ -36,6 +36,10 @@
  */
 TSS2_RC
 ifapi_check_valid_path(const char *path) {
+    if (!path) {
+        return_error(TSS2_FAPI_RC_BAD_REFERENCE, "No reference to path");
+    }
+
     for (size_t i = 0; i < strlen(path); i++) {
         if (!(isalnum(path[i]) || path[i] == '_' || path[i] == '-' || path[i] == '/')) {
             LOG_ERROR("Invalid character %c in path %s", path[i], path);
@@ -327,6 +331,7 @@ expand_path(IFAPI_KEYSTORE *keystore, const char *path, char **file_name) {
         goto_if_error(r, "Out of memory", error);
 
         free_string_list(node_list);
+        node_list = NULL;
     }
 
     /* Normalize the pathname. '/' at the beginning no '/' at the end. */
@@ -347,7 +352,8 @@ expand_path(IFAPI_KEYSTORE *keystore, const char *path, char **file_name) {
 
 error:
     SAFE_FREE(*file_name);
-    free_string_list(node_list);
+    if (node_list)
+        free_string_list(node_list);
     return r;
 }
 /** Expand FAPI path to object path.
@@ -879,6 +885,9 @@ ifapi_keystore_list_all(IFAPI_KEYSTORE *keystore,
     if (*numresults > 0) {
         /* Convert absolute path to relative path */
         for (i = 0; i < *numresults; i++) {
+            if (!(*results)[i]) {
+                return_if_error(TSS2_ESYS_RC_BAD_REFERENCE, "Invalid reference.");
+            }
             full_path_to_fapi_path(keystore, (*results)[i]);
         }
     }
