@@ -275,6 +275,9 @@ digest_with_hash_name_cb(UINT8       *digest,
             return_error(TSS2_FAPI_RC_BAD_VALUE, "Invalid IMA binary format.");
         }
     }
+    if (template->event_size - *offset < (size_t)digest_size) {
+        return_error(TSS2_FAPI_RC_BAD_VALUE, "Invalid IMA binary format.");
+    }
     LOGBLOB_TRACE(&buffer[*offset], digest_size, "IMA data_hash");
 
     if (jso && zero_digest(digest, template->hash_size)
@@ -898,6 +901,9 @@ ifapi_get_ima_eventname(IFAPI_IMA_EVENT *ima_event, char **name) {
     }
     if (i >= n) {
         return_error(TSS2_FAPI_RC_BAD_VALUE, "Undefined constant.");
+    }
+    if (ima_event->template_value.size == 0 || ima_event->template_value.buffer == NULL) {
+        return_error(TSS2_FAPI_RC_BAD_VALUE, "Empty template value.");
     }
     template.event_size = ima_event->template_value.size;
     template.event_buffer = &ima_event->template_value.buffer[0];
